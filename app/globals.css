@@ -14,30 +14,42 @@
   --color-warning: 154 90 20;
   --color-warning-bg: 255 246 227;
   --color-info-bg: 233 242 246;
-  --font-display: "Arial Narrow", "Avenir Next Condensed", "Helvetica Neue", Arial, sans-serif;
-  --font-body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "SFMono-Regular", "Cascadia Code", "Roboto Mono", ui-monospace, monospace;
+  --font-display:
+    "Arial Narrow", "Avenir Next Condensed", "Helvetica Neue", Arial, sans-serif;
+  --font-body:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-mono:
+    "SFMono-Regular", "Cascadia Code", "Roboto Mono", ui-monospace, monospace;
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 22px;
   --shadow-signal-sm: 0 8px 18px rgba(16, 25, 34, 0.1);
   --shadow-signal: 0 18px 50px rgba(16, 25, 34, 0.14);
-  --focus-ring: 0 0 0 3px rgb(var(--color-lime) / 0.9), 0 0 0 5px rgb(var(--color-ink) / 0.84);
+  --focus-ring:
+    0 0 0 3px rgb(var(--color-lime) / 0.9),
+    0 0 0 5px rgb(var(--color-ink) / 0.84);
   color-scheme: light;
 }
 
 html[lang="th"] {
-  --font-display: "Noto Sans Thai", "Leelawadee UI", Tahoma, Arial, sans-serif;
-  --font-body: "Noto Sans Thai", "Leelawadee UI", Tahoma, ui-sans-serif, sans-serif;
+  --font-display:
+    var(--font-noto-sans-thai), "Noto Sans Thai", Tahoma, Arial, sans-serif;
+  --font-body:
+    var(--font-noto-sans-thai), "Noto Sans Thai", Tahoma, ui-sans-serif,
+    sans-serif;
 }
 
 html[lang="th"] .brand-subtitle {
-  font-size: 7px;
+  font-family: var(--font-body);
+  font-size: 8px;
   letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
 }
 
 html[lang="th"] .hero-copy h1 {
-  letter-spacing: -0.045em;
+  letter-spacing: 0;
 }
 
 [data-theme="dark"] {
@@ -91,7 +103,9 @@ body {
   margin: 0;
   min-width: 320px;
   text-rendering: optimizeLegibility;
-  transition: background-color 240ms ease, color 240ms ease;
+  transition:
+    background-color 240ms ease,
+    color 240ms ease;
 }
 
 body,
@@ -116,7 +130,12 @@ a {
 
 button,
 a {
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease, transform 160ms ease;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
 button:focus-visible,
@@ -220,7 +239,7 @@ summary:focus-visible {
 
 .nav-link {
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .nav-link-muted {
@@ -353,9 +372,8 @@ summary:focus-visible {
 .headline-accent {
   color: rgb(var(--color-coral));
   display: inline-block;
-  font-style: italic;
+  font-style: normal;
   padding-right: 0.04em;
-  transform: translateY(-0.02em);
 }
 
 .hero-lede {
@@ -378,7 +396,7 @@ summary:focus-visible {
   cursor: pointer;
   display: inline-flex;
   font-size: 14px;
-  font-weight: 750;
+  font-weight: 700;
   gap: 9px;
   justify-content: center;
   min-height: 46px;
@@ -466,7 +484,9 @@ summary:focus-visible {
 .hero-signal-art::after {
   background: rgb(var(--color-coral));
   border-radius: 50%;
-  box-shadow: 0 0 0 10px rgb(var(--color-coral) / 0.1), 0 0 52px rgb(var(--color-coral) / 0.2);
+  box-shadow:
+    0 0 0 10px rgb(var(--color-coral) / 0.1),
+    0 0 52px rgb(var(--color-coral) / 0.2);
   content: "";
   height: 10px;
   position: absolute;
@@ -494,7 +514,9 @@ summary:focus-visible {
 
 .signal-code-frame {
   background: rgb(var(--color-paper));
-  box-shadow: 18px 18px 0 rgb(var(--color-coral) / 0.9), 0 24px 70px rgb(0 0 0 / 0.35);
+  box-shadow:
+    18px 18px 0 rgb(var(--color-coral) / 0.9),
+    0 24px 70px rgb(0 0 0 / 0.35);
   margin-top: 18px;
   padding: 42px;
   position: relative;
@@ -726,7 +748,7 @@ summary:focus-visible {
 .type-button-label {
   display: block;
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -771,7 +793,7 @@ summary:focus-visible {
 .field-label-row label {
   color: rgb(var(--color-ink));
   font-size: 12px;
-  font-weight: 720;
+  font-weight: 700;
 }
 
 .field-label-row {
@@ -889,14 +911,14 @@ summary:focus-visible {
 .check-label {
   color: rgb(var(--color-ink));
   font-size: 12px;
-  font-weight: 670;
+  font-weight: 600;
 }
 
 .switch-description {
   color: rgb(var(--color-muted));
   display: block;
   font-size: 10px;
-  font-weight: 450;
+  font-weight: 400;
   line-height: 1.4;
   margin-top: 2px;
 }
@@ -1058,8 +1080,16 @@ input[type="range"] {
 .preview-stage {
   align-items: center;
   background-color: rgb(var(--color-paper));
-  background-image: linear-gradient(45deg, rgb(var(--color-line) / 0.24) 25%, transparent 25%), linear-gradient(-45deg, rgb(var(--color-line) / 0.24) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgb(var(--color-line) / 0.24) 75%), linear-gradient(-45deg, transparent 75%, rgb(var(--color-line) / 0.24) 75%);
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-image:
+    linear-gradient(45deg, rgb(var(--color-line) / 0.24) 25%, transparent 25%),
+    linear-gradient(-45deg, rgb(var(--color-line) / 0.24) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgb(var(--color-line) / 0.24) 75%),
+    linear-gradient(-45deg, transparent 75%, rgb(var(--color-line) / 0.24) 75%);
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
   background-size: 16px 16px;
   border: 1px solid rgb(var(--color-line));
   border-radius: var(--radius-md);
@@ -1430,7 +1460,7 @@ input[type="range"] {
   align-items: center;
   color: rgb(var(--color-ink));
   display: inline-flex;
-  font-weight: 750;
+  font-weight: 700;
   gap: 5px;
   margin-top: 13px;
   text-decoration-thickness: 1px;
@@ -1776,4 +1806,142 @@ input[type="range"] {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* Thai uses the bundled Noto Sans Thai family for consistent Latin and Thai metrics. */
+html[lang="th"] body,
+html[lang="th"] button,
+html[lang="th"] input,
+html[lang="th"] select,
+html[lang="th"] textarea {
+  letter-spacing: 0;
+}
+
+html[lang="th"] body {
+  line-height: 1.65;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+html[lang="th"] h1,
+html[lang="th"] h2,
+html[lang="th"] h3,
+html[lang="th"] h4,
+html[lang="th"] h5,
+html[lang="th"] h6 {
+  font-family: var(--font-display);
+  letter-spacing: 0;
+  line-height: 1.12;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+@media (min-width: 761px) {
+  html[lang="th"] .hero-copy h1 {
+    font-size: clamp(3.1rem, 6.2vw, 6rem);
+  }
+
+  html[lang="th"] .section-intro h2 {
+    font-size: clamp(2.5rem, 4vw, 4rem);
+  }
+
+  html[lang="th"] .story-lead h2 {
+    font-size: clamp(2.4rem, 3.5vw, 3.5rem);
+  }
+
+  html[lang="th"] .ownership-section h2,
+  html[lang="th"] .acceptable-section h2 {
+    font-size: clamp(2.3rem, 3.7vw, 3.7rem);
+  }
+}
+
+@media (max-width: 760px) {
+  html[lang="th"] .hero-copy h1 {
+    font-size: clamp(2.5rem, 11vw, 3.8rem);
+  }
+
+  html[lang="th"] .story-lead h2 {
+    font-size: clamp(2.25rem, 10vw, 3.5rem);
+  }
+
+  html[lang="th"] .privacy-heading h2 {
+    font-size: clamp(1.6rem, 7vw, 2.8rem);
+  }
+}
+
+html[lang="th"] .brand-subtitle,
+html[lang="th"] .language-button,
+html[lang="th"] .eyebrow,
+html[lang="th"] .hero-note,
+html[lang="th"] .trust-item,
+html[lang="th"] .signal-caption,
+html[lang="th"] .workspace-kicker,
+html[lang="th"] .preview-kicker,
+html[lang="th"] .control-caption,
+html[lang="th"] .field-hint,
+html[lang="th"] .payload-label,
+html[lang="th"] .status-label,
+html[lang="th"] .option-label,
+html[lang="th"] .logo-file-note,
+html[lang="th"] .status-pill,
+html[lang="th"] .preview-meta,
+html[lang="th"] .ownership-note-label,
+html[lang="th"] .payload-value,
+html[lang="th"] .range-row output {
+  font-family: var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[lang="th"] .headline-accent {
+  font-style: normal;
+  padding-right: 0;
+  transform: none;
+}
+
+html[lang="th"] .hero-lede,
+html[lang="th"] .story-body > p:not(.story-emphasis),
+html[lang="th"] .story-list-item,
+html[lang="th"] .ownership-section h2,
+html[lang="th"] .acceptable-section > p {
+  white-space: pre-line;
+}
+
+html[lang="th"] .hero-lede,
+html[lang="th"] .section-lede,
+html[lang="th"] .story-body > p,
+html[lang="th"] .ownership-section p,
+html[lang="th"] .acceptable-section > p,
+html[lang="th"] .privacy-grid p,
+html[lang="th"] .field-hint,
+html[lang="th"] .logo-file-note,
+html[lang="th"] .status-message,
+html[lang="th"] .validation-message,
+html[lang="th"] .privacy-inline,
+html[lang="th"] .limit-note,
+html[lang="th"] .switch-description,
+html[lang="th"] .type-button-description,
+html[lang="th"] .qr-empty-state p {
+  line-height: 1.65;
+}
+
+html[lang="th"] .story-emphasis {
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+html[lang="th"] .type-button-label {
+  line-height: 1.35;
+  white-space: normal;
+}
+
+html[lang="th"] .button,
+html[lang="th"] .language-button,
+html[lang="th"] .action-button,
+html[lang="th"] .segmented-button,
+html[lang="th"] .upload-label,
+html[lang="th"] .field-input,
+html[lang="th"] .field-select,
+html[lang="th"] .field-textarea {
+  line-height: 1.5;
 }

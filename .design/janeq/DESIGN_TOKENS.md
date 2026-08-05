@@ -20,8 +20,8 @@ The source of truth is [`app/globals.css`](../../app/globals.css). Tailwind maps
 ## Rhythm and type
 
 - Base spacing: 4px, expanding through 8/12/16/24/32/48/64/96/128.
-- Display: condensed system sans, bold and tight for the wordmark and hero.
-- Body: system sans, 16px default with 1.6 line height.
+- Display: condensed system sans, bold and tight for the wordmark and hero; Thai mode uses bundled Noto Sans Thai with normal tracking and no faux italic.
+- Body: system sans in English; Noto Sans Thai for Thai and mixed Thai/Latin UI, 16px default with 1.6–1.7 line height.
 - Technical: system monospace for payloads, filenames, and state labels.
 - Corner language: 10px for fields, 18px for the workspace shell, full pills only for status.
 
