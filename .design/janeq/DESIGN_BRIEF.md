@@ -47,7 +47,7 @@ JaneQ makes the directness visible: the destination is encoded in the image in t
 **Visual thesis:** an editorial service instrument cut from cool blueprint paper and ink navy, with one signal-coral action color and a missing-module mark that makes the product’s critique literal.
 
 - **Palette:** cool fog `#eef2f3`, clean paper `#fbfcfa`, ink navy `#101922`, signal coral `#e9674f`, indicator lime `#d7ee73`.
-- **Type:** condensed sans display for a compact, poster-like voice; system sans for readable UI and body copy; mono for payloads and technical state.
+- **Type:** condensed sans display for a compact, poster-like voice; Noto Sans Thai for Thai headings and mixed Thai/Latin UI; system sans for English body copy; mono for payloads and technical state.
 - **Layout:** edge-to-edge hero, then a quiet two-column utility workspace with the preview treated as the primary instrument.
 - **Signature:** the JaneQ mark is a Q-shaped loop with a missing QR module and a direct arrow. It appears in the logo, hero graphic, and empty preview state.
 - **Motion:** the missing module settles into place on entry; a single coral signal line draws toward the hero CTA; preview state transitions use short fades and respect reduced motion.
