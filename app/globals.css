@@ -860,6 +860,45 @@ summary:focus-visible {
   margin-top: 1px;
 }
 
+.promptpay-summary {
+  background: rgb(var(--color-fog) / 0.55);
+  border-left: 3px solid rgb(var(--color-coral));
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 12px 14px;
+}
+
+.promptpay-summary-label {
+  color: rgb(var(--color-coral));
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.promptpay-summary strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.promptpay-notes {
+  border-top: 1px solid rgb(var(--color-line));
+  color: rgb(var(--color-muted));
+  font-size: 11px;
+  line-height: 1.55;
+  margin-top: 20px;
+  padding-top: 14px;
+}
+
+.promptpay-notes p {
+  margin: 0;
+}
+
+.promptpay-notes p + p {
+  margin-top: 8px;
+}
+
 .color-control {
   align-items: center;
   background: rgb(var(--color-paper));

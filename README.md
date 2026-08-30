@@ -15,12 +15,13 @@ JaneQ is a small open-source QR utility by [theerapat.org](https://theerapat.org
 - Wi-Fi credentials using the common `WIFI:` format
 - Contact cards using `MECARD:`
 - Geographic locations using `geo:` links
+- Thai PromptPay payment-request QR codes with optional amounts
 
 The generator supports PNG and true-vector SVG downloads, copy-to-clipboard where the browser allows it, printing, transparent backgrounds, correction levels, quiet-zone size, output size, square or rounded modules, and a local center mark or uploaded logo.
 
 ## Privacy model
 
-QR matrices are generated in the browser with the open-source [`qrcode`](https://github.com/soldair/node-qrcode) library. Entered content and uploaded logos are not sent to JaneQ, stored in a database, or passed through a redirect URL. There is no analytics SDK or application backend in this repository.
+QR matrices are generated in the browser with the open-source [`qrcode`](https://github.com/soldair/node-qrcode) library. PromptPay payloads are generated locally with [`promptpay-qr`](https://github.com/dtinth/promptpay-qr). Entered content and uploaded logos are not sent to JaneQ, stored in a database, or passed through a redirect URL. There is no analytics SDK or application backend in this repository.
 
 This is a statement about the generator. Review every destination before publishing it: JaneQ cannot verify whether an encoded URL or message is safe.
 

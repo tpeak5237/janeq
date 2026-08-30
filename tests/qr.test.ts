@@ -6,8 +6,11 @@ import {
   createQrMatrix,
   DEFAULT_CUSTOMIZATION,
   DEFAULT_FIELDS,
+  formatPromptPayId,
   getReliabilityMessages,
   makeQrFilename,
+  normalizePromptPayAmount,
+  normalizePromptPayId,
   normalizeUrlInput,
   renderQrSvg,
 } from "@/lib/qr";
@@ -58,6 +61,58 @@ describe("JaneQ direct payloads", () => {
     expect(buildPayload("location", { ...DEFAULT_FIELDS, latitude: "13.7563", longitude: "100.5018", locationLabel: "Bangkok" }).payload).toBe("geo:13.7563,100.5018?q=Bangkok");
     expect(buildPayload("location", { ...DEFAULT_FIELDS, latitude: "91", longitude: "0" }).error).toContain("latitude");
   });
+
+  it("generates fixed-amount and payer-entered PromptPay payloads", () => {
+    const fixed = buildPayload("promptpay", {
+      ...DEFAULT_FIELDS,
+      promptpayId: "0812345678",
+      promptpayAmount: "250.00",
+    });
+    const payerEntered = buildPayload("promptpay", {
+      ...DEFAULT_FIELDS,
+      promptpayId: "0812345678",
+    });
+
+    expect(fixed.error).toBeNull();
+    expect(fixed.payload).toBe(
+      "00020101021229370016A000000677010111011300668123456785802TH53037645406250.0063047D89",
+    );
+    expect(payerEntered.error).toBeNull();
+    expect(payerEntered.payload).toBe(
+      "00020101021129370016A000000677010111011300668123456785802TH530376463045D82",
+    );
+    expect(fixed.payload).not.toBe(payerEntered.payload);
+    expect(fixed.payload).toContain("5406250.00");
+    expect(payerEntered.payload).not.toContain("54");
+  });
+
+  it("normalizes and validates PromptPay IDs and amounts", () => {
+    expect(normalizePromptPayId("081-234-5678")).toBe("0812345678");
+    expect(formatPromptPayId("0812345678")).toBe("081 234 5678");
+    expect(normalizePromptPayAmount("20")).toBe("20.00");
+    expect(normalizePromptPayAmount("99.5")).toBe("99.50");
+    expect(normalizePromptPayAmount("1250.00")).toBe("1250.00");
+    expect(normalizePromptPayAmount("0")).toBeNull();
+    expect(normalizePromptPayAmount("-1")).toBeNull();
+    expect(normalizePromptPayAmount("250.999")).toBeNull();
+
+    expect(
+      buildPayload("promptpay", { ...DEFAULT_FIELDS }).error,
+    ).toContain("PromptPay ID");
+    expect(
+      buildPayload("promptpay", {
+        ...DEFAULT_FIELDS,
+        promptpayId: "081234567x",
+      }).error,
+    ).toContain("PromptPay ID");
+    expect(
+      buildPayload("promptpay", {
+        ...DEFAULT_FIELDS,
+        promptpayId: "0812345678",
+        promptpayAmount: "250.999",
+      }).error,
+    ).toContain("2 decimal places");
+  });
 });
 
 describe("JaneQ reliability helpers", () => {
@@ -75,5 +130,6 @@ describe("JaneQ reliability helpers", () => {
   it("creates predictable filenames for exports", () => {
     expect(makeQrFilename("url", { ...DEFAULT_FIELDS, url: "https://example.com/hello" }, "png")).toBe("janeq-qr-example-com-hello.png");
     expect(makeQrFilename("text", { ...DEFAULT_FIELDS, text: "Hello, JaneQ!" }, "svg")).toBe("janeq-qr-hello-janeq.svg");
+    expect(makeQrFilename("promptpay", { ...DEFAULT_FIELDS, promptpayId: "0812345678" }, "png")).toBe("janeq-qr-promptpay.png");
   });
 });

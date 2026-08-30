@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import generatePromptPayPayload from "promptpay-qr";
 
 export type QrType =
   | "url"
@@ -8,7 +9,8 @@ export type QrType =
   | "sms"
   | "wifi"
   | "contact"
-  | "location";
+  | "location"
+  | "promptpay";
 
 export type WifiSecurity = "WPA" | "WEP" | "nopass";
 export type ErrorCorrection = "L" | "M" | "Q" | "H";
@@ -34,6 +36,8 @@ export interface QrFields {
   latitude: string;
   longitude: string;
   locationLabel: string;
+  promptpayId: string;
+  promptpayAmount: string;
 }
 
 export interface QrCustomization {
@@ -84,6 +88,8 @@ export const DEFAULT_FIELDS: QrFields = {
   latitude: "",
   longitude: "",
   locationLabel: "",
+  promptpayId: "",
+  promptpayAmount: "",
 };
 
 export const DEFAULT_CUSTOMIZATION: QrCustomization = {
@@ -148,10 +154,18 @@ export const QR_TYPE_META: Record<
     description: "Open a map location",
     icon: "⌖",
   },
+  promptpay: {
+    label: "PromptPay",
+    shortLabel: "PromptPay",
+    description: "Create a Thai payment request",
+    icon: "฿",
+  },
 };
 
 const PHONE_PATTERN = /^\+?[0-9]{5,15}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PROMPTPAY_ID_PATTERN = /^(?:0[689][0-9]{8}|[0-9]{13}|[0-9]{15})$/;
+const PROMPTPAY_AMOUNT_PATTERN = /^(?:0|[1-9][0-9]*)(?:\.[0-9]{1,2})?$/;
 
 function clean(value: string): string {
   return value.trim();
@@ -162,6 +176,28 @@ function normalizePhone(value: string): string {
   const hasLeadingPlus = trimmed.startsWith("+");
   const digits = trimmed.replace(/[^0-9]/g, "");
   return hasLeadingPlus ? `+${digits}` : digits;
+}
+
+export function normalizePromptPayId(value: string): string {
+  return clean(value).replace(/[\s-]/g, "");
+}
+
+export function formatPromptPayId(value: string): string {
+  const normalized = normalizePromptPayId(value);
+  return normalized.length === 10
+    ? normalized.replace(/^(...)(...)(....)$/, "$1 $2 $3")
+    : normalized;
+}
+
+export function normalizePromptPayAmount(value: string): string | null {
+  const amount = clean(value);
+  if (!amount || !PROMPTPAY_AMOUNT_PATTERN.test(amount)) return null;
+
+  const [whole, fraction = ""] = amount.split(".");
+  const normalized = `${whole}.${fraction.padEnd(2, "0")}`;
+  const numericAmount = Number(normalized);
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) return null;
+  return normalized;
 }
 
 function escapeWifiValue(value: string): string {
@@ -281,6 +317,30 @@ export function buildPayload(type: QrType, fields: QrFields): PayloadResult {
       const label = clean(fields.locationLabel);
       return result(`geo:${latitude},${longitude}${label ? `?q=${encodeURIComponent(label)}` : ""}`, null, "The location opens in a map app that supports geo links.");
     }
+    case "promptpay": {
+      const promptpayId = normalizePromptPayId(fields.promptpayId);
+      if (!PROMPTPAY_ID_PATTERN.test(promptpayId)) {
+        return result(null, "Enter a supported PromptPay ID.");
+      }
+
+      const rawAmount = clean(fields.promptpayAmount);
+      const amount = rawAmount ? normalizePromptPayAmount(rawAmount) : null;
+      if (rawAmount && !amount) {
+        return result(null, "Enter a positive amount with up to 2 decimal places.");
+      }
+
+      const payload = generatePromptPayPayload(
+        promptpayId,
+        amount ? { amount: Number(amount) } : {},
+      );
+      return result(
+        payload,
+        null,
+        amount
+          ? "The amount is pre-filled for the payer in a compatible banking app."
+          : "The payer enters the amount in their banking app.",
+      );
+    }
   }
 }
 
@@ -302,10 +362,13 @@ export function payloadLabel(type: QrType, fields: QrFields): string {
       return clean(fields.contactName) || "contact card";
     case "location":
       return clean(fields.locationLabel) || "map location";
+    case "promptpay":
+      return "promptpay";
   }
 }
 
 export function makeQrFilename(type: QrType, fields: QrFields, extension: "png" | "svg"): string {
+  if (type === "promptpay") return `janeq-qr-promptpay.${extension}`;
   const source = payloadLabel(type, fields)
     .toLowerCase()
     .replace(/^https?:\/\//, "")

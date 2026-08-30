@@ -96,6 +96,8 @@ const strings: Record<Locale, Record<string, string>> = {
     typeContactDescription: "Save contact information",
     typeLocation: "Location",
     typeLocationDescription: "Open a map location",
+    typePromptpay: "PromptPay",
+    typePromptpayDescription: "Create a Thai payment request",
     workspaceAria: "QR code settings",
     qrTypeAria: "QR code type",
     previewAria: "QR preview and export",
@@ -151,6 +153,19 @@ const strings: Record<Locale, Record<string, string>> = {
     longitudeHint: "Between -180 and 180",
     labelOptional: "Label (optional)",
     labelPlaceholder: "Bangkok",
+    promptpayId: "PromptPay ID",
+    promptpayIdPlaceholder: "0812345678",
+    promptpayIdHint: "Phone number or supported PromptPay identifier.",
+    promptpayAmount: "Amount",
+    promptpayAmountPlaceholder: "250.00",
+    promptpayAmountHint: "Leave blank to let the payer enter the amount.",
+    promptpayPrivacy: "Generated locally in your browser.",
+    promptpayPaymentDisclaimer:
+      "JaneQ creates a PromptPay payment QR only. It cannot verify whether a payment has been completed.",
+    promptpayRecipientCheck:
+      "Check the recipient name in your banking app before confirming payment.",
+    promptpayAmountPayer: "Amount entered by payer",
+    promptpayAmountSummary: "฿{{amount}}",
     foreground: "Foreground",
     background: "Background",
     transparent: "Transparent background",
@@ -223,6 +238,12 @@ const strings: Record<Locale, Record<string, string>> = {
     errorLatitude: "Enter a latitude between -90 and 90.",
     errorLongitude: "Enter a longitude between -180 and 180.",
     hintLocation: "The location opens in a map app that supports geo links.",
+    errorPromptpayIdRequired: "Enter a PromptPay ID.",
+    errorPromptpayId: "Check the PromptPay ID and try again.",
+    errorPromptpayAmount: "Enter a positive amount with up to 2 decimal places.",
+    hintPromptpayAmount: "The amount is pre-filled for the payer in a compatible banking app.",
+    hintPromptpayPayer: "The payer enters the amount in their banking app.",
+    copyQrPayload: "Copy QR payload",
     warningContrastTitle: "Contrast is getting soft",
     warningContrastBody:
       "The current colors measure {{ratio}}:1. QR scanners prefer a much darker foreground against its background.",
@@ -359,6 +380,8 @@ const strings: Record<Locale, Record<string, string>> = {
     typeContactDescription: "บันทึกเป็นรายชื่อ",
     typeLocation: "ตำแหน่ง",
     typeLocationDescription: "เปิดในแผนที่",
+    typePromptpay: "พร้อมเพย์",
+    typePromptpayDescription: "สร้าง QR รับชำระเงินไทย",
     workspaceAria: "ตั้งค่า QR โค้ด",
     qrTypeAria: "ประเภท QR",
     previewAria: "ตัวอย่างและการดาวน์โหลด QR",
@@ -413,6 +436,19 @@ const strings: Record<Locale, Record<string, string>> = {
     longitudeHint: "ระหว่าง -180 ถึง 180",
     labelOptional: "ป้ายกำกับ (ไม่บังคับ)",
     labelPlaceholder: "กรุงเทพฯ",
+    promptpayId: "หมายเลขพร้อมเพย์",
+    promptpayIdPlaceholder: "0812345678",
+    promptpayIdHint: "เบอร์โทรศัพท์หรือหมายเลขพร้อมเพย์ที่รองรับ",
+    promptpayAmount: "จำนวนเงิน",
+    promptpayAmountPlaceholder: "250.00",
+    promptpayAmountHint: "เว้นว่างเพื่อให้ผู้ชำระกรอกจำนวนเงินเอง",
+    promptpayPrivacy: "สร้าง QR ภายในเบราว์เซอร์ของคุณ",
+    promptpayPaymentDisclaimer:
+      "JaneQ สร้าง QR สำหรับรับชำระผ่านพร้อมเพย์เท่านั้น และไม่สามารถตรวจสอบได้ว่ามีการชำระเงินจริงแล้วหรือไม่",
+    promptpayRecipientCheck:
+      "โปรดตรวจสอบชื่อผู้รับในแอปธนาคารก่อนยืนยันการโอน",
+    promptpayAmountPayer: "ผู้ชำระเป็นผู้ระบุจำนวนเงิน",
+    promptpayAmountSummary: "฿{{amount}}",
     foreground: "สีด้านหน้า",
     background: "สีพื้นหลัง",
     transparent: "พื้นหลังโปร่งใส",
@@ -482,6 +518,12 @@ const strings: Record<Locale, Record<string, string>> = {
     errorLatitude: "ใส่ละติจูดระหว่าง -90 ถึง 90",
     errorLongitude: "ใส่ลองจิจูดระหว่าง -180 ถึง 180",
     hintLocation: "ตำแหน่งจะเปิดในแอปแผนที่ที่รองรับลิงก์ geo",
+    errorPromptpayIdRequired: "กรุณากรอกหมายเลขพร้อมเพย์",
+    errorPromptpayId: "โปรดตรวจสอบหมายเลขพร้อมเพย์แล้วลองอีกครั้ง",
+    errorPromptpayAmount: "ใส่จำนวนเงินที่มากกว่าศูนย์และมีทศนิยมไม่เกิน 2 ตำแหน่ง",
+    hintPromptpayAmount: "จำนวนเงินจะแสดงไว้ล่วงหน้าในแอปธนาคารที่รองรับ",
+    hintPromptpayPayer: "ผู้ชำระเป็นผู้ระบุจำนวนเงินในแอปธนาคาร",
+    copyQrPayload: "คัดลอกข้อมูล QR",
     warningContrastTitle: "คอนทราสต์ต่ำ",
     warningContrastBody:
       "สีชุดนี้มีคอนทราสต์ {{ratio}}:1 ควรใช้สี QR ที่เข้มกว่านี้เมื่อเทียบกับพื้นหลัง",
@@ -632,6 +674,16 @@ export function localizedPayloadMessage(
         locale,
         result.error.includes("latitude") ? "errorLatitude" : "errorLongitude",
       );
+    if (type === "promptpay") {
+      error = translate(
+        locale,
+        !fields.promptpayId.trim()
+          ? "errorPromptpayIdRequired"
+          : result.error.includes("amount")
+            ? "errorPromptpayAmount"
+            : "errorPromptpayId",
+      );
+    }
   }
   if (result.hint) {
     if (type === "url") {
@@ -649,6 +701,14 @@ export function localizedPayloadMessage(
     if (type === "wifi") hint = translate(locale, "hintWifi");
     if (type === "contact") hint = translate(locale, "hintContact");
     if (type === "location") hint = translate(locale, "hintLocation");
+    if (type === "promptpay") {
+      hint = translate(
+        locale,
+        fields.promptpayAmount.trim()
+          ? "hintPromptpayAmount"
+          : "hintPromptpayPayer",
+      );
+    }
   }
   return { error, hint };
 }
