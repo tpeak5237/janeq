@@ -1,6 +1,12 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  InputHTMLAttributes,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { Icon } from "@/components/icons";
 import { JaneQMark } from "@/components/janeq-mark";
@@ -17,8 +23,10 @@ import {
   dataUrlToBlob,
   DEFAULT_CUSTOMIZATION,
   DEFAULT_FIELDS,
+  formatPromptPayId,
   getReliabilityMessages,
   makeQrFilename,
+  normalizePromptPayAmount,
   payloadLabel,
   processLogoFile,
   QR_TYPE_META,
@@ -39,6 +47,7 @@ const QR_TYPES: QrType[] = [
   "wifi",
   "contact",
   "location",
+  "promptpay",
 ];
 
 const TYPE_COPY_KEYS: Record<
@@ -85,6 +94,11 @@ const TYPE_COPY_KEYS: Record<
     short: "typeLocation",
     description: "typeLocationDescription",
   },
+  promptpay: {
+    label: "typePromptpay",
+    short: "typePromptpay",
+    description: "typePromptpayDescription",
+  },
 };
 
 const PRESET_LOGO_DATA_URL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
@@ -112,6 +126,7 @@ function Field({
   onChange,
   placeholder,
   type = "text",
+  inputMode,
 }: {
   hint?: string;
   id: string;
@@ -120,6 +135,7 @@ function Field({
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
+  inputMode?: InputHTMLAttributes<HTMLInputElement>["inputMode"];
 }) {
   return (
     <div className="field">
@@ -131,6 +147,7 @@ function Field({
         autoComplete="off"
         className="field-input"
         id={id}
+        inputMode={inputMode}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         type={type}
@@ -192,6 +209,13 @@ export function QrStudio() {
   const payloadResult = useMemo(
     () => buildPayload(type, fields),
     [fields, type],
+  );
+  const promptpayAmount = useMemo(
+    () =>
+      type === "promptpay"
+        ? normalizePromptPayAmount(fields.promptpayAmount)
+        : null,
+    [fields.promptpayAmount, type],
   );
   const generationKey = useMemo(
     () =>
@@ -669,6 +693,33 @@ export function QrStudio() {
               />
             </div>
           ) : null}
+          {type === "promptpay" ? (
+            <div className="field-grid">
+              <Field
+                hint={t("promptpayIdHint")}
+                id="qr-promptpay-id"
+                label={t("promptpayId")}
+                onChange={(value) => updateField("promptpayId", value)}
+                placeholder={t("promptpayIdPlaceholder")}
+                type="tel"
+                value={fields.promptpayId}
+              />
+              <Field
+                hint={t("promptpayAmountHint")}
+                id="qr-promptpay-amount"
+                inputMode="decimal"
+                label={t("promptpayAmount")}
+                onChange={(value) => updateField("promptpayAmount", value)}
+                placeholder={t("promptpayAmountPlaceholder")}
+                type="text"
+                value={fields.promptpayAmount}
+              />
+              <div className="field-full privacy-inline" role="note">
+                <Icon name="shield" size={16} />
+                <span>{t("promptpayPrivacy")}</span>
+              </div>
+            </div>
+          ) : null}
           {localizedPayload.error ? (
             <div aria-live="polite" className="validation-stack">
               <div
@@ -950,6 +1001,17 @@ export function QrStudio() {
           <p className="status-message">
             {notice ?? (isValid ? t("statusValid") : t("statusWaiting"))}
           </p>
+          {type === "promptpay" && payloadResult.payload ? (
+            <div className="promptpay-summary" role="note">
+              <span className="promptpay-summary-label">{t("typePromptpay")}</span>
+              <strong>{formatPromptPayId(fields.promptpayId)}</strong>
+              <strong>
+                {promptpayAmount
+                  ? t("promptpayAmountSummary", { amount: promptpayAmount })
+                  : t("promptpayAmountPayer")}
+              </strong>
+            </div>
+          ) : null}
           {payloadResult.payload ? (
             <div className="payload-box">
               <span className="payload-label">{t("payloadLabel")}</span>
@@ -992,7 +1054,8 @@ export function QrStudio() {
               onClick={copyContent}
               type="button"
             >
-              <Icon name="copy" size={15} /> {t("copyContent")}
+              <Icon name="copy" size={15} />
+              {type === "promptpay" ? t("copyQrPayload") : t("copyContent")}
             </button>
             <button
               className="action-button"
@@ -1004,6 +1067,12 @@ export function QrStudio() {
             </button>
           </div>
         </div>
+        {type === "promptpay" && payloadResult.payload ? (
+          <div className="promptpay-notes" role="note">
+            <p>{t("promptpayRecipientCheck")}</p>
+            <p>{t("promptpayPaymentDisclaimer")}</p>
+          </div>
+        ) : null}
         <p className="limit-note">
           <Icon name="warning" size={16} />
           <span>

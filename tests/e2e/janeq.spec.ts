@@ -37,6 +37,35 @@ test.describe("JaneQ generator", () => {
     await expect(page.getByTestId("qr-preview").locator("img")).toBeVisible();
   });
 
+  test("generates a local PromptPay payment request with an optional amount", async ({
+    page,
+  }) => {
+    await page.goto("/#generator");
+    await page.getByRole("button", { name: /PromptPay/ }).click();
+
+    await expect(page.getByLabel("PromptPay ID")).toBeVisible();
+    await page.getByLabel("PromptPay ID").fill("081-234-5678");
+    await page.getByLabel("Amount").fill("250.00");
+
+    await expect(page.getByTestId("qr-preview").locator("img")).toBeVisible();
+    await expect(page.locator(".payload-value")).toContainText("5406250.00");
+    await expect(page.getByText("081 234 5678", { exact: true })).toBeVisible();
+    await expect(page.getByText("฿250.00", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(/Generated locally in your browser/),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/cannot verify whether a payment has been completed/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Copy QR payload" }),
+    ).toBeEnabled();
+
+    await page.getByLabel("Amount").fill("");
+    await expect(page.getByText("Amount entered by payer", { exact: true })).toBeVisible();
+    await expect(page.locator(".payload-value")).not.toContainText("5406");
+  });
+
   test("shows validation and remains usable with keyboard focus", async ({
     page,
   }) => {
