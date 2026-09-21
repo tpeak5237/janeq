@@ -16,6 +16,8 @@ const LOCALE_EVENT = "janeq-locale-change";
 const strings: Record<Locale, Record<string, string>> = {
   en: {
     siteSubtitle: "Just Another Non-Existent QR Code",
+    siteDescription:
+      "Create and scan QR codes locally in your browser with camera or image input. No account, tracking redirect, or QR content upload.",
     navWhy: "Why JaneQ",
     navDomain: "theerapat.org",
     navGithub: "GitHub",
@@ -56,6 +58,9 @@ const strings: Record<Locale, Record<string, string>> = {
     whyList1: "Direct payload, no JaneQ URL in the middle.",
     whyList2: "Local generation, so your content stays in your browser.",
     whyList3: "Downloaded static files do not depend on this site.",
+    principleDirect: "Direct",
+    principlePrivate: "Private",
+    principleYours: "Yours",
     ownershipEyebrow: "Keep the receipt",
     ownershipHeading: "Your QR code should belong to you.",
     ownershipBody:
@@ -76,8 +81,45 @@ const strings: Record<Locale, Record<string, string>> = {
       "JaneQ is for ordinary, lawful communication. Do not use it to impersonate someone, hide harmful destinations, or distribute content you do not have the right to share. A QR code is only a container; responsibility still belongs to the person who publishes it.",
     footerBy: "by theerapat.org",
     footerTagline: "Just Another Non-Existent QR Code.",
+    footerUtility: "Local-first QR utility",
     footerSource: "Source",
     footerDomain: "theerapat.org",
+    createQr: "Create QR",
+    scanQr: "Scan QR",
+    ariaToolModes: "QR utility modes",
+    scannerAria: "QR scanner",
+    scannerInputAria: "QR scanner input",
+    scannerDescription: "Use your camera or a local image. Nothing leaves this browser.",
+    processedLocally: "Processed locally",
+    camera: "Camera",
+    uploadImage: "Upload image",
+    startCamera: "Start camera",
+    stopCamera: "Stop camera",
+    switchCamera: "Switch camera",
+    cameraPreview: "Camera preview for QR scanning",
+    cameraIdle: "Camera is off",
+    cameraReady: "Ready to start the camera",
+    requestingCamera: "Requesting camera permission…",
+    cameraPermissionDenied: "Camera permission was denied. Allow access and try again.",
+    noCamera: "No camera was found on this device.",
+    cameraRequiresHttps: "Camera scanning requires HTTPS or localhost.",
+    cameraUnsupported: "This browser does not support camera access.",
+    scanning: "Scanning…",
+    chooseImage: "Choose an image",
+    dropImageHere: "or drop a QR image here",
+    uploadedImagePreview: "Selected QR image preview",
+    processingImage: "Reading the image locally…",
+    qrDetected: "QR detected",
+    noQrFound: "No QR code found in this image.",
+    scannerError: "The scanner could not start. Try another camera or image.",
+    scanResult: "Scan result",
+    scannerResultHint: "Your decoded QR content will appear here.",
+    scannerPrivacy: "Camera frames and selected images stay in your browser and are not uploaded.",
+    copyResult: "Copy result",
+    copyResultDone: "Copied to clipboard.",
+    clipboardUnavailable: "Clipboard access was unavailable.",
+    openLink: "Open link",
+    scanAnother: "Scan another",
     typeWebsite: "Website",
     typeWebsiteLong: "Website URL",
     typeWebsiteDescription: "Open a direct web address",
@@ -96,6 +138,8 @@ const strings: Record<Locale, Record<string, string>> = {
     typeContactDescription: "Save contact information",
     typeLocation: "Location",
     typeLocationDescription: "Open a map location",
+    typePromptpay: "PromptPay",
+    typePromptpayDescription: "Create a Thai payment request",
     workspaceAria: "QR code settings",
     qrTypeAria: "QR code type",
     previewAria: "QR preview and export",
@@ -151,6 +195,19 @@ const strings: Record<Locale, Record<string, string>> = {
     longitudeHint: "Between -180 and 180",
     labelOptional: "Label (optional)",
     labelPlaceholder: "Bangkok",
+    promptpayId: "PromptPay ID",
+    promptpayIdPlaceholder: "0812345678",
+    promptpayIdHint: "Phone number or supported PromptPay identifier.",
+    promptpayAmount: "Amount",
+    promptpayAmountPlaceholder: "250.00",
+    promptpayAmountHint: "Leave blank to let the payer enter the amount.",
+    promptpayPrivacy: "Generated locally in your browser.",
+    promptpayPaymentDisclaimer:
+      "JaneQ creates a PromptPay payment QR only. It cannot verify whether a payment has been completed.",
+    promptpayRecipientCheck:
+      "Check the recipient name in your banking app before confirming payment.",
+    promptpayAmountPayer: "Amount entered by payer",
+    promptpayAmountSummary: "฿{{amount}}",
     foreground: "Foreground",
     background: "Background",
     transparent: "Transparent background",
@@ -223,6 +280,13 @@ const strings: Record<Locale, Record<string, string>> = {
     errorLatitude: "Enter a latitude between -90 and 90.",
     errorLongitude: "Enter a longitude between -180 and 180.",
     hintLocation: "The location opens in a map app that supports geo links.",
+    errorPromptpayIdRequired: "Enter a PromptPay ID.",
+    errorPromptpayId: "Check the PromptPay ID and try again.",
+    errorPromptpayAmount: "Enter a positive amount with up to 2 decimal places.",
+    hintPromptpayAmount:
+      "The amount is pre-filled for the payer in a compatible banking app.",
+    hintPromptpayPayer: "The payer enters the amount in their banking app.",
+    copyQrPayload: "Copy QR payload",
     warningContrastTitle: "Contrast is getting soft",
     warningContrastBody:
       "The current colors measure {{ratio}}:1. QR scanners prefer a much darker foreground against its background.",
@@ -280,6 +344,8 @@ const strings: Record<Locale, Record<string, string>> = {
   },
   th: {
     siteSubtitle: "เครื่องมือสร้าง QR โค้ดตรง",
+    siteDescription:
+      "สร้างและสแกน QR โค้ดในเบราว์เซอร์โดยตรงด้วยกล้องหรือไฟล์ภาพ โดยไม่ต้องสมัครสมาชิกและไม่อัปโหลดข้อมูล QR",
     navWhy: "ทำไมต้อง JaneQ",
     navDomain: "theerapat.org",
     navGithub: "GitHub",
@@ -319,6 +385,9 @@ const strings: Record<Locale, Record<string, string>> = {
     whyList2:
       "สร้างบนอุปกรณ์ของคุณ\nข้อมูลที่กรอกใช้สร้าง QR โค้ดภายในเบราว์เซอร์",
     whyList3: "ดาวน์โหลดแล้วใช้ต่อได้\nไฟล์ QR ไม่ต้องพึ่ง JaneQ หลังดาวน์โหลด",
+    principleDirect: "ตรง",
+    principlePrivate: "เป็นส่วนตัว",
+    principleYours: "เป็นของคุณ",
     ownershipEyebrow: "ดาวน์โหลดแล้วเป็นของคุณ",
     ownershipHeading: "สร้างเสร็จแล้ว\nนำไปใช้ได้เลย",
     ownershipBody:
@@ -339,8 +408,45 @@ const strings: Record<Locale, Record<string, string>> = {
       "อย่าใช้ QR โค้ดเพื่อแอบอ้าง ซ่อนปลายทางอันตราย\nหรือเผยแพร่สิ่งที่คุณไม่มีสิทธิ์ใช้\n\nผู้สร้างและผู้เผยแพร่ QR โค้ดเป็นผู้รับผิดชอบ\nต่อปลายทางและวิธีนำไปใช้งาน",
     footerBy: "โดย theerapat.org",
     footerTagline: "QR โค้ดที่ไม่ใส่อะไรเกินจำเป็น",
+    footerUtility: "เครื่องมือ QR ที่ประมวลผลในอุปกรณ์",
     footerSource: "ซอร์สโค้ด",
     footerDomain: "theerapat.org",
+    createQr: "สร้าง QR",
+    scanQr: "สแกน QR",
+    ariaToolModes: "โหมดเครื่องมือ QR",
+    scannerAria: "เครื่องมือสแกน QR",
+    scannerInputAria: "แหล่งข้อมูลสำหรับสแกน QR",
+    scannerDescription: "ใช้กล้องหรือเลือกรูปภาพ ข้อมูลจะไม่ออกจากเบราว์เซอร์นี้",
+    processedLocally: "ประมวลผลในอุปกรณ์นี้",
+    camera: "กล้อง",
+    uploadImage: "อัปโหลดรูปภาพ",
+    startCamera: "เปิดกล้อง",
+    stopCamera: "ปิดกล้อง",
+    switchCamera: "สลับกล้อง",
+    cameraPreview: "ภาพจากกล้องสำหรับสแกน QR",
+    cameraIdle: "กล้องยังไม่เปิด",
+    cameraReady: "พร้อมเปิดกล้อง",
+    requestingCamera: "กำลังขอสิทธิ์ใช้กล้อง…",
+    cameraPermissionDenied: "ไม่ได้รับอนุญาตให้ใช้กล้อง ลองอนุญาตแล้วเปิดใหม่",
+    noCamera: "ไม่พบกล้องในอุปกรณ์นี้",
+    cameraRequiresHttps: "การสแกนด้วยกล้องต้องใช้ HTTPS หรือ localhost",
+    cameraUnsupported: "เบราว์เซอร์นี้ไม่รองรับการใช้กล้อง",
+    scanning: "กำลังสแกน…",
+    chooseImage: "เลือกรูปภาพ",
+    dropImageHere: "หรือลากรูป QR มาวางที่นี่",
+    uploadedImagePreview: "ตัวอย่างรูป QR ที่เลือก",
+    processingImage: "กำลังอ่านรูปภาพในอุปกรณ์นี้…",
+    qrDetected: "พบ QR แล้ว",
+    noQrFound: "ไม่พบ QR โค้ดในรูปภาพนี้",
+    scannerError: "เปิดเครื่องสแกนไม่ได้ ลองใช้กล้องหรือรูปภาพอื่น",
+    scanResult: "ผลการสแกน",
+    scannerResultHint: "ข้อมูล QR ที่อ่านได้จะแสดงที่นี่",
+    scannerPrivacy: "ภาพจากกล้องและรูปภาพที่เลือกจะอยู่ในเบราว์เซอร์และไม่ถูกอัปโหลด",
+    copyResult: "คัดลอกผลลัพธ์",
+    copyResultDone: "คัดลอกไปยังคลิปบอร์ดแล้ว",
+    clipboardUnavailable: "เบราว์เซอร์ไม่อนุญาตให้ใช้คลิปบอร์ด",
+    openLink: "เปิดลิงก์",
+    scanAnother: "สแกนอีกครั้ง",
     typeWebsite: "เว็บไซต์",
     typeWebsiteLong: "รายละเอียดเว็บไซต์",
     typeWebsiteDescription: "เปิดลิงก์",
@@ -359,6 +465,8 @@ const strings: Record<Locale, Record<string, string>> = {
     typeContactDescription: "บันทึกเป็นรายชื่อ",
     typeLocation: "ตำแหน่ง",
     typeLocationDescription: "เปิดในแผนที่",
+    typePromptpay: "พร้อมเพย์",
+    typePromptpayDescription: "สร้าง QR รับชำระเงินไทย",
     workspaceAria: "ตั้งค่า QR โค้ด",
     qrTypeAria: "ประเภท QR",
     previewAria: "ตัวอย่างและการดาวน์โหลด QR",
@@ -413,6 +521,19 @@ const strings: Record<Locale, Record<string, string>> = {
     longitudeHint: "ระหว่าง -180 ถึง 180",
     labelOptional: "ป้ายกำกับ (ไม่บังคับ)",
     labelPlaceholder: "กรุงเทพฯ",
+    promptpayId: "หมายเลขพร้อมเพย์",
+    promptpayIdPlaceholder: "0812345678",
+    promptpayIdHint: "เบอร์โทรศัพท์หรือหมายเลขพร้อมเพย์ที่รองรับ",
+    promptpayAmount: "จำนวนเงิน",
+    promptpayAmountPlaceholder: "250.00",
+    promptpayAmountHint: "เว้นว่างเพื่อให้ผู้ชำระกรอกจำนวนเงินเอง",
+    promptpayPrivacy: "สร้าง QR ภายในเบราว์เซอร์ของคุณ",
+    promptpayPaymentDisclaimer:
+      "JaneQ สร้าง QR สำหรับรับชำระผ่านพร้อมเพย์เท่านั้น และไม่สามารถตรวจสอบได้ว่ามีการชำระเงินจริงแล้วหรือไม่",
+    promptpayRecipientCheck:
+      "โปรดตรวจสอบชื่อผู้รับในแอปธนาคารก่อนยืนยันการโอน",
+    promptpayAmountPayer: "ผู้ชำระเป็นผู้ระบุจำนวนเงิน",
+    promptpayAmountSummary: "฿{{amount}}",
     foreground: "สีด้านหน้า",
     background: "สีพื้นหลัง",
     transparent: "พื้นหลังโปร่งใส",
@@ -482,6 +603,12 @@ const strings: Record<Locale, Record<string, string>> = {
     errorLatitude: "ใส่ละติจูดระหว่าง -90 ถึง 90",
     errorLongitude: "ใส่ลองจิจูดระหว่าง -180 ถึง 180",
     hintLocation: "ตำแหน่งจะเปิดในแอปแผนที่ที่รองรับลิงก์ geo",
+    errorPromptpayIdRequired: "กรุณากรอกหมายเลขพร้อมเพย์",
+    errorPromptpayId: "โปรดตรวจสอบหมายเลขพร้อมเพย์แล้วลองอีกครั้ง",
+    errorPromptpayAmount: "ใส่จำนวนเงินที่มากกว่าศูนย์และมีทศนิยมไม่เกิน 2 ตำแหน่ง",
+    hintPromptpayAmount: "จำนวนเงินจะแสดงไว้ล่วงหน้าในแอปธนาคารที่รองรับ",
+    hintPromptpayPayer: "ผู้ชำระเป็นผู้ระบุจำนวนเงินในแอปธนาคาร",
+    copyQrPayload: "คัดลอกข้อมูล QR",
     warningContrastTitle: "คอนทราสต์ต่ำ",
     warningContrastBody:
       "สีชุดนี้มีคอนทราสต์ {{ratio}}:1 ควรใช้สี QR ที่เข้มกว่านี้เมื่อเทียบกับพื้นหลัง",
@@ -632,6 +759,16 @@ export function localizedPayloadMessage(
         locale,
         result.error.includes("latitude") ? "errorLatitude" : "errorLongitude",
       );
+    if (type === "promptpay") {
+      error = translate(
+        locale,
+        !fields.promptpayId.trim()
+          ? "errorPromptpayIdRequired"
+          : result.error.includes("amount")
+            ? "errorPromptpayAmount"
+            : "errorPromptpayId",
+      );
+    }
   }
   if (result.hint) {
     if (type === "url") {
@@ -649,6 +786,14 @@ export function localizedPayloadMessage(
     if (type === "wifi") hint = translate(locale, "hintWifi");
     if (type === "contact") hint = translate(locale, "hintContact");
     if (type === "location") hint = translate(locale, "hintLocation");
+    if (type === "promptpay") {
+      hint = translate(
+        locale,
+        fields.promptpayAmount.trim()
+          ? "hintPromptpayAmount"
+          : "hintPromptpayPayer",
+      );
+    }
   }
   return { error, hint };
 }
