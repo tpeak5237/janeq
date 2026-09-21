@@ -96,9 +96,9 @@ describe("JaneQ direct payloads", () => {
     expect(normalizePromptPayAmount("-1")).toBeNull();
     expect(normalizePromptPayAmount("250.999")).toBeNull();
 
-    expect(
-      buildPayload("promptpay", { ...DEFAULT_FIELDS }).error,
-    ).toContain("PromptPay ID");
+    expect(buildPayload("promptpay", { ...DEFAULT_FIELDS }).error).toContain(
+      "PromptPay ID",
+    );
     expect(
       buildPayload("promptpay", {
         ...DEFAULT_FIELDS,

@@ -13,13 +13,18 @@ The initial JaneQ pass is designed against WCAG 2.2 AA fundamentals.
 - [x] Reduced-motion media query removes decorative transitions and smooth scrolling.
 - [x] Dark mode preserves semantic contrast and can be toggled without changing content.
 - [x] Touch targets are at least roughly 38–46 px for primary controls.
+- [x] Create/Scan and Camera/Upload controls use keyboard-operable tab semantics with visible selected states.
+- [x] Camera status and scan results are exposed through `aria-live` regions without forced focus changes.
+- [x] The camera preview has an accessible label, and the image picker accepts image files with a labelled drop area.
 - [ ] Test with a screen reader and real keyboard-only flow on each supported browser before release.
 - [ ] Test downloaded QR images with representative low-light, small-size, and print scenarios.
 
 ## Manual release checks
 
-1. Tab from the header through the hero CTA and into the generator without a focus trap.
+1. Tab from the header into the utility mode switcher without a focus trap.
 2. Select every QR type without using a pointer.
 3. Trigger invalid URL and Wi-Fi states and confirm the message is announced.
-4. Turn on reduced motion and confirm the page remains fully understandable.
-5. Test at 375 px and 1280 px widths with browser zoom at 200%.
+4. Start and stop camera scanning, deny permission, and confirm the status is announced.
+5. Upload a QR image, copy the result, and verify unsafe URL schemes have no Open link action.
+6. Turn on reduced motion and confirm the page remains fully understandable.
+7. Test at 375 px and 1280 px widths with browser zoom at 200%.

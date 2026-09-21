@@ -732,18 +732,22 @@ export function QrStudio() {
             </div>
           ) : null}
           {localizedPayload.hint && !localizedPayload.error ? (
-            <p className="field-hint" style={{ marginTop: 14 }}>
+            <p className="field-hint payload-hint">
               {localizedPayload.hint}
             </p>
           ) : null}
         </div>
 
-        <div className="control-section">
-          <div className="control-section-heading">
-            <h4>{t("reliableHeading")}</h4>
-            <span className="control-caption">{t("reliableCaption")}</span>
-          </div>
-          <div className="field-grid">
+        <details className="control-disclosure">
+          <summary>
+            <span>
+              <strong>{t("reliableHeading")}</strong>
+              <span className="disclosure-caption">{t("reliableCaption")}</span>
+            </span>
+            <span aria-hidden="true" className="disclosure-icon" />
+          </summary>
+          <div className="disclosure-body">
+            <div className="field-grid">
             <div className="field">
               <span className="field-label">{t("foreground")}</span>
               <div className="color-control">
@@ -882,33 +886,38 @@ export function QrStudio() {
                 </button>
               </div>
             </div>
+            </div>
+            <div className="validation-stack">
+              {localizedReliabilityMessages.map((message) => (
+                <div
+                  className={`validation-message validation-message-${message.severity}`}
+                  key={message.id}
+                  role={message.severity === "warning" ? "status" : undefined}
+                >
+                  <Icon
+                    name={message.severity === "warning" ? "warning" : "shield"}
+                    size={16}
+                  />
+                  <span>
+                    <strong>{message.title}</strong>
+                    {message.body}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="validation-stack">
-            {localizedReliabilityMessages.map((message) => (
-              <div
-                className={`validation-message validation-message-${message.severity}`}
-                key={message.id}
-                role={message.severity === "warning" ? "status" : undefined}
-              >
-                <Icon
-                  name={message.severity === "warning" ? "warning" : "shield"}
-                  size={16}
-                />
-                <span>
-                  <strong>{message.title}</strong>
-                  {message.body}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        </details>
 
-        <div className="control-section">
-          <div className="control-section-heading">
-            <h4>{t("logoHeading")}</h4>
-            <span className="control-caption">{t("logoCaption")}</span>
-          </div>
-          <div className="logo-options">
+        <details className="control-disclosure">
+          <summary>
+            <span>
+              <strong>{t("logoHeading")}</strong>
+              <span className="disclosure-caption">{t("logoCaption")}</span>
+            </span>
+            <span aria-hidden="true" className="disclosure-icon" />
+          </summary>
+          <div className="disclosure-body">
+            <div className="logo-options">
             <button
               aria-pressed={logoSource === "none"}
               className="segmented-button"
@@ -937,18 +946,19 @@ export function QrStudio() {
                 type="file"
               />
             </label>
+            </div>
+            {logoLabel ? (
+              <p className="logo-file-note">
+                {t("logoUsing", { name: logoLabel })}
+              </p>
+            ) : null}
+            {logoError ? (
+              <p className="logo-file-note error" role="alert">
+                {logoError}
+              </p>
+            ) : null}
           </div>
-          {logoLabel ? (
-            <p className="logo-file-note">
-              {t("logoUsing", { name: logoLabel })}
-            </p>
-          ) : null}
-          {logoError ? (
-            <p className="logo-file-note error" role="alert">
-              {logoError}
-            </p>
-          ) : null}
-        </div>
+        </details>
       </section>
 
       <section aria-label={t("previewAria")} className="workspace-preview">
@@ -1013,10 +1023,10 @@ export function QrStudio() {
             </div>
           ) : null}
           {payloadResult.payload ? (
-            <div className="payload-box">
-              <span className="payload-label">{t("payloadLabel")}</span>
+            <details className="payload-disclosure" open>
+              <summary>{t("payloadLabel")}</summary>
               <code className="payload-value">{payloadResult.payload}</code>
-            </div>
+            </details>
           ) : null}
           <div className="preview-meta">
             <span>✓ {t("directPayload")}</span>

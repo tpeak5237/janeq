@@ -1,6 +1,6 @@
 # Security review notes
 
-Last reviewed: 2026-08-03
+Last reviewed: 2026-09-21
 
 ## Boundary
 
@@ -18,6 +18,13 @@ JaneQ is a client-only static web application. It has no API routes, server acti
 ## QR safety
 
 JaneQ does not validate or guarantee the safety of encoded destinations. Users should inspect URLs and only publish codes they are authorized to share. Static QR files can be copied and redistributed like any other image.
+
+## Scanner safety
+
+- Camera frames and selected QR images are decoded locally in the browser with `@zxing/browser`; there is no scanner endpoint or telemetry path.
+- Camera permission is requested only from the explicit Start camera action. Camera tracks are stopped when scanning stops, the user switches modes, or the scanner unmounts.
+- Scanned values are rendered as text. JaneQ never navigates automatically. The Open link action is offered only for URLs parsed as `http:` or `https:` and uses a new tab with `noopener`/`noreferrer`.
+- Image uploads are accepted only as browser image files up to 20 MB, are not persisted, and their temporary object URLs are revoked after decoding.
 
 ## Dependency and release checks
 
