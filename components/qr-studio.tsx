@@ -711,6 +711,7 @@ export function QrStudio() {
                 label={t("promptpayAmount")}
                 onChange={(value) => updateField("promptpayAmount", value)}
                 placeholder={t("promptpayAmountPlaceholder")}
+                type="text"
                 value={fields.promptpayAmount}
               />
               <div className="field-full privacy-inline" role="note">

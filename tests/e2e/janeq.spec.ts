@@ -82,6 +82,19 @@ test.describe("JaneQ generator", () => {
     await expect(page.locator(".payload-value")).not.toContainText("5406");
   });
 
+  test("shows validation and remains usable with keyboard focus", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const urlField = page.getByLabel("Website address");
+    await urlField.fill("https://");
+    await expect(
+      page.getByRole("region", { name: "QR code settings" }).getByRole("alert"),
+    ).toContainText("valid website address");
+    await urlField.focus();
+    await expect(urlField).toBeFocused();
+  });
+
   test("switches modes without requesting the camera until asked", async ({
     page,
   }) => {
