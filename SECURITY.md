@@ -21,7 +21,7 @@ JaneQ does not validate or guarantee the safety of encoded destinations. Users s
 
 ## Scanner safety
 
-- Camera frames and selected QR images are decoded locally in the browser with `@zxing/browser`; there is no scanner endpoint or telemetry path.
+- Camera frames and selected QR images are decoded locally in the browser with `qr-scanner`; there is no scanner endpoint or telemetry path. The optional development instrumentation logs timing, pipeline path, brightness class, and ROI usage only—never camera frames or QR contents.
 - Camera permission is requested only from the explicit Start camera action. Camera tracks are stopped when scanning stops, the user switches modes, or the scanner unmounts.
 - Scanned values are rendered as text. JaneQ never navigates automatically. The Open link action is offered only for URLs parsed as `http:` or `https:` and uses a new tab with `noopener`/`noreferrer`.
 - Image uploads are accepted only as browser image files up to 20 MB, are not persisted, and their temporary object URLs are revoked after decoding.

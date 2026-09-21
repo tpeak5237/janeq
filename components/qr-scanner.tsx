@@ -7,8 +7,6 @@ import {
   useRef,
   useState,
 } from "react";
-import type { BrowserQRCodeReader } from "@zxing/browser";
-import type { IScannerControls } from "@zxing/browser";
 
 import {
   classifyQrPayload,
@@ -16,6 +14,10 @@ import {
   normalizeScanResult,
   type ScanPayloadClassification,
 } from "@/lib/scanner";
+import {
+  QrCameraPipeline,
+  type CameraInfo,
+} from "@/lib/qr-camera-pipeline";
 import { useCopy } from "@/lib/i18n";
 
 type InputMode = "camera" | "upload";
@@ -55,35 +57,20 @@ function cameraErrorStatus(error: unknown): ScannerStatus {
 export function QrScanner() {
   const { t } = useCopy();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const controlsRef = useRef<IScannerControls | null>(null);
-  const readerRef = useRef<BrowserQRCodeReader | null>(null);
+  const pipelineRef = useRef<QrCameraPipeline | null>(null);
   const detectedRef = useRef(false);
   const imageObjectUrlRef = useRef<string | null>(null);
   const startingCameraRef = useRef(false);
-  const cameraRunRef = useRef(0);
   const [inputMode, setInputMode] = useState<InputMode>("camera");
   const [status, setStatus] = useState<ScannerStatus>("idle");
   const [result, setResult] = useState<ScanPayloadClassification | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+  const [cameras, setCameras] = useState<CameraInfo[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState<string | undefined>();
+  const [hasTorch, setHasTorch] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
+  const [lowLight, setLowLight] = useState(false);
   const [copyNotice, setCopyNotice] = useState<string | null>(null);
-
-  function stopActiveCamera() {
-    controlsRef.current?.stop();
-    controlsRef.current = null;
-    const video = videoRef.current;
-    const stream = video?.srcObject;
-    if (typeof MediaStream !== "undefined" && stream instanceof MediaStream) {
-      stream.getTracks().forEach((track) => track.stop());
-    }
-    if (video) {
-      video.pause();
-      video.srcObject = null;
-    }
-    readerRef.current = null;
-    setActiveDeviceId(undefined);
-  }
 
   function clearImagePreview() {
     if (imageObjectUrlRef.current) {
@@ -98,7 +85,10 @@ export function QrScanner() {
     try {
       const classification = classifyQrPayload(normalizeScanResult(value));
       detectedRef.current = true;
-      stopActiveCamera();
+      pipelineRef.current?.stop();
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate?.(35);
+      }
       setResult(classification);
       setStatus("detected");
     } catch {
@@ -125,42 +115,14 @@ export function QrScanner() {
     detectedRef.current = false;
     setResult(null);
     setCopyNotice(null);
+    setLowLight(false);
     setStatus("requesting");
-    stopActiveCamera();
-    const cameraRun = cameraRunRef.current;
 
     try {
-      const { BrowserQRCodeReader } = await import("@zxing/browser");
-      const reader = new BrowserQRCodeReader();
-      readerRef.current = reader;
-      const controls = await reader.decodeFromVideoDevice(
-        deviceId,
-        videoRef.current ?? undefined,
-        (decoded) => {
-          if (decoded) handleDecodedValue(decoded.getText());
-        },
-      );
-
-      if (cameraRun !== cameraRunRef.current || detectedRef.current) {
-        controls.stop();
-        return;
-      }
-      controlsRef.current = controls;
-      const stream = videoRef.current?.srcObject;
-      if (stream instanceof MediaStream) {
-        setActiveDeviceId(
-          stream.getVideoTracks()[0]?.getSettings().deviceId || deviceId,
-        );
-      } else {
-        setActiveDeviceId(deviceId);
-      }
-      const availableCameras = await BrowserQRCodeReader.listVideoInputDevices();
-      setCameras(availableCameras);
-      setStatus("scanning");
+      await pipelineRef.current?.start(deviceId);
     } catch (error) {
-      const isCurrentRun = cameraRun === cameraRunRef.current;
-      stopActiveCamera();
-      if (isCurrentRun) setStatus(cameraErrorStatus(error));
+      pipelineRef.current?.stop();
+      setStatus(cameraErrorStatus(error));
     } finally {
       startingCameraRef.current = false;
     }
@@ -168,8 +130,17 @@ export function QrScanner() {
 
   function stopCamera() {
     detectedRef.current = false;
-    stopActiveCamera();
+    pipelineRef.current?.stop();
+    setLowLight(false);
+    setHasTorch(false);
+    setTorchOn(false);
+    setActiveDeviceId(undefined);
     setStatus("idle");
+  }
+
+  async function toggleTorch() {
+    const nextValue = await pipelineRef.current?.toggleTorch();
+    if (typeof nextValue === "boolean") setTorchOn(nextValue);
   }
 
   function resetResult() {
@@ -181,7 +152,12 @@ export function QrScanner() {
 
   function selectInputMode(nextMode: InputMode) {
     if (nextMode === inputMode) return;
-    if (nextMode === "upload") stopActiveCamera();
+    if (nextMode === "upload") {
+      pipelineRef.current?.stop();
+      setLowLight(false);
+      setHasTorch(false);
+      setTorchOn(false);
+    }
     resetResult();
     setInputMode(nextMode);
   }
@@ -203,10 +179,9 @@ export function QrScanner() {
     setImagePreviewUrl(objectUrl);
     setStatus("decoding");
     try {
-      const { BrowserQRCodeReader } = await import("@zxing/browser");
-      const reader = new BrowserQRCodeReader();
-      const decoded = await reader.decodeFromImageUrl(objectUrl);
-      handleDecodedValue(decoded.getText());
+      pipelineRef.current?.stop();
+      const decoded = await pipelineRef.current?.decodeImage(file);
+      if (decoded) handleDecodedValue(decoded);
     } catch {
       setStatus("no-result");
     } finally {
@@ -241,8 +216,23 @@ export function QrScanner() {
   }
 
   useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const pipeline = new QrCameraPipeline(video, {
+      onDecoded: handleDecodedValue,
+      onLightingChange: (isLowLight) => setLowLight(isLowLight),
+      onReady: ({ cameras: availableCameras, activeDeviceId: nextDeviceId, hasTorch: torchSupported }) => {
+        setCameras(availableCameras);
+        setActiveDeviceId(nextDeviceId);
+        setHasTorch(torchSupported);
+        setTorchOn(false);
+        setStatus("scanning");
+      },
+    });
+    pipelineRef.current = pipeline;
     return () => {
-      stopActiveCamera();
+      pipeline.destroy();
+      pipelineRef.current = null;
       clearImagePreview();
     };
   }, []);
@@ -310,6 +300,7 @@ export function QrScanner() {
                   <div className="camera-placeholder">{t("cameraIdle")}</div>
                 ) : null}
               </div>
+              <p className="scanner-full-frame-hint">{t("scannerFullFrameHint")}</p>
               <div className="scanner-actions">
                 {status === "scanning" || status === "requesting" ? (
                   <button
@@ -328,16 +319,26 @@ export function QrScanner() {
                     {t("startCamera")}
                   </button>
                 )}
+                {hasTorch && status === "scanning" ? (
+                  <button
+                    aria-pressed={torchOn}
+                    className="action-button"
+                    onClick={() => void toggleTorch()}
+                    type="button"
+                  >
+                    {torchOn ? t("turnTorchOff") : t("turnTorchOn")}
+                  </button>
+                ) : null}
                 {cameras.length > 1 && status === "scanning" ? (
                   <button
                     className="action-button"
                     onClick={() => {
                       const currentIndex = cameras.findIndex(
-                        (camera) => camera.deviceId === activeDeviceId,
+                        (camera) => camera.id === activeDeviceId,
                       );
                       const nextCamera =
                         cameras[(currentIndex + 1) % cameras.length];
-                      void startCamera(nextCamera.deviceId);
+                      void startCamera(nextCamera.id);
                     }}
                     type="button"
                   >
@@ -370,9 +371,17 @@ export function QrScanner() {
             <span aria-hidden="true" className={`status-dot status-${status}`} />
             {statusMessage}
           </p>
+          {lowLight && inputMode === "camera" && status === "scanning" ? (
+            <p aria-live="polite" className="scanner-light-hint">
+              {t("lowLightHint")}
+            </p>
+          ) : null}
         </div>
 
-        <div className="scanner-result-panel" aria-live="polite">
+        <div
+          className={`scanner-result-panel ${result ? "scanner-result-panel-success" : "scanner-result-panel-empty"}`}
+          aria-live="polite"
+        >
           {result ? (
             <>
               <span className="workspace-kicker">{t("qrDetected")}</span>
