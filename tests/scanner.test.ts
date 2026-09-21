@@ -4,6 +4,7 @@ import {
   classifyQrPayload,
   isDuplicateScan,
   isSafeExternalUrl,
+  isUnsafeScanPayload,
   normalizeScanResult,
 } from "@/lib/scanner";
 import {
@@ -33,7 +34,17 @@ describe("QR scanner payload safety", () => {
     expect(isSafeExternalUrl("http://localhost:3000")).toBe(true);
     expect(isSafeExternalUrl("javascript:alert(1)")).toBe(false);
     expect(isSafeExternalUrl("data:text/html,hello")).toBe(false);
+    expect(isSafeExternalUrl("file:///etc/passwd")).toBe(false);
+    expect(isSafeExternalUrl("vbscript:msgbox(1)")).toBe(false);
     expect(isSafeExternalUrl("//example.com/path")).toBe(false);
+    expect(isUnsafeScanPayload("javascript:alert(1)")).toBe(true);
+    expect(isUnsafeScanPayload("data:text/html,hello")).toBe(true);
+    expect(isUnsafeScanPayload("file:///etc/passwd")).toBe(true);
+    expect(isUnsafeScanPayload("vbscript:msgbox(1)")).toBe(true);
+    expect(isUnsafeScanPayload("blob:https://example.com/1")).toBe(true);
+    expect(isUnsafeScanPayload("https://example.com")).toBe(false);
+    expect(isUnsafeScanPayload("mailto:hello@example.com")).toBe(false);
+    expect(isUnsafeScanPayload("WIFI:T:WPA;S:Studio;P:secret;;")).toBe(false);
   });
 
   it("classifies common QR payloads without changing the raw value", () => {

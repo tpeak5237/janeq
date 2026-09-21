@@ -407,6 +407,13 @@ export function contrastRatio(foreground: string, background: string): number | 
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+export function isDarkForeground(foreground: string, background: string): boolean | null {
+  const foregroundRgb = hexToRgb(foreground);
+  const backgroundRgb = hexToRgb(background);
+  if (!foregroundRgb || !backgroundRgb) return null;
+  return relativeLuminance(foregroundRgb) < relativeLuminance(backgroundRgb);
+}
+
 export function getReliabilityMessages(
   customization: QrCustomization,
   hasLogo: boolean,
@@ -414,12 +421,24 @@ export function getReliabilityMessages(
   const messages: ReliabilityMessage[] = [];
   if (!customization.transparent) {
     const ratio = contrastRatio(customization.foreground, customization.background);
+    const darkForeground = isDarkForeground(
+      customization.foreground,
+      customization.background,
+    );
     if (ratio !== null && ratio < 7) {
       messages.push({
         id: "contrast",
         severity: "warning",
         title: "Contrast is getting soft",
         body: `The current colors measure ${ratio.toFixed(1)}:1. QR scanners prefer a much darker foreground against its background.`,
+      });
+    }
+    if (darkForeground === false) {
+      messages.push({
+        id: "polarity",
+        severity: "warning",
+        title: "Light modules on a dark background",
+        body: "Most scanners expect a dark code on a light background. Invert the colors if scans fail.",
       });
     }
   } else {
@@ -507,14 +526,17 @@ export function renderQrSvg(
 ): string {
   const moduleCount = matrix.size + customization.margin * 2;
   const moduleSize = customization.outputSize / moduleCount;
-  const background = customization.transparent ? "none" : customization.background;
+  const foreground = escapeXmlAttribute(customization.foreground);
+  const background = customization.transparent
+    ? "none"
+    : escapeXmlAttribute(customization.background);
   const modules: string[] = [];
 
   matrix.data.forEach((isDark, index) => {
     if (!isDark) return;
     const x = (index % matrix.size + customization.margin) * moduleSize;
     const y = (Math.floor(index / matrix.size) + customization.margin) * moduleSize;
-    modules.push(drawSvgModule(x, y, moduleSize, customization.foreground, customization.moduleShape));
+    modules.push(drawSvgModule(x, y, moduleSize, foreground, customization.moduleShape));
   });
 
   const logoMarkup = logoDataUrl
@@ -523,7 +545,9 @@ export function renderQrSvg(
         const panelSize = logoSize * 1.28;
         const offset = (customization.outputSize - panelSize) / 2;
         const imageOffset = (customization.outputSize - logoSize) / 2;
-        const panelFill = customization.transparent ? "#ffffff" : customization.background;
+        const panelFill = customization.transparent
+          ? "#ffffff"
+          : escapeXmlAttribute(customization.background);
         return `<rect x="${offset.toFixed(2)}" y="${offset.toFixed(2)}" width="${panelSize.toFixed(2)}" height="${panelSize.toFixed(2)}" rx="${(panelSize * 0.16).toFixed(2)}" fill="${panelFill}"/><image href="${escapeXmlAttribute(logoDataUrl)}" x="${imageOffset.toFixed(2)}" y="${imageOffset.toFixed(2)}" width="${logoSize.toFixed(2)}" height="${logoSize.toFixed(2)}" preserveAspectRatio="xMidYMid meet"/>`;
       })()
     : "";
@@ -627,21 +651,39 @@ export function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([bytes], { type: mime });
 }
 
-export function validateLogoFile(file: File): string | null {
+export type LogoErrorCode = "type" | "size" | "decode" | "dimensions" | "process";
+
+export class LogoProcessError extends Error {
+  readonly code: LogoErrorCode;
+
+  constructor(code: LogoErrorCode, message: string) {
+    super(message);
+    this.name = "LogoProcessError";
+    this.code = code;
+  }
+}
+
+export function validateLogoFile(file: File): LogoProcessError | null {
   const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
-  if (!allowedTypes.includes(file.type)) return "Choose a PNG, JPEG, or WebP image.";
-  if (file.size > 2 * 1024 * 1024) return "Logo files must be 2 MB or smaller.";
+  if (!allowedTypes.includes(file.type)) {
+    return new LogoProcessError("type", "Choose a PNG, JPEG, or WebP image.");
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    return new LogoProcessError("size", "Logo files must be 2 MB or smaller.");
+  }
   return null;
 }
 
 export async function processLogoFile(file: File): Promise<string> {
   const validationError = validateLogoFile(file);
-  if (validationError) throw new Error(validationError);
+  if (validationError) throw validationError;
   const objectUrl = URL.createObjectURL(file);
   try {
     const image = await loadImage(objectUrl);
     const longestSide = Math.max(image.naturalWidth, image.naturalHeight);
-    if (!longestSide) throw new Error("The image has no readable dimensions.");
+    if (!longestSide) {
+      throw new LogoProcessError("dimensions", "The image has no readable dimensions.");
+    }
     const scale = Math.min(1, 256 / longestSide);
     const width = Math.max(1, Math.round(image.naturalWidth * scale));
     const height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -649,9 +691,14 @@ export async function processLogoFile(file: File): Promise<string> {
     canvas.width = width;
     canvas.height = height;
     const context = canvas.getContext("2d");
-    if (!context) throw new Error("The image could not be processed locally.");
+    if (!context) {
+      throw new LogoProcessError("process", "The image could not be processed locally.");
+    }
     context.drawImage(image, 0, 0, width, height);
     return canvas.toDataURL("image/png");
+  } catch (error) {
+    if (error instanceof LogoProcessError) throw error;
+    throw new LogoProcessError("decode", "The image could not be decoded.");
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
