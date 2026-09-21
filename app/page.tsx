@@ -78,8 +78,10 @@ export default function HomePage() {
             </div>
             <div aria-label={t("ariaToolModes")} className="tool-mode-switcher" role="tablist">
               <button
+                aria-controls="qr-create-panel"
                 aria-selected={mode === "create"}
                 className="tool-mode-button"
+                id="mode-create"
                 onClick={() => setMode("create")}
                 role="tab"
                 type="button"
@@ -87,8 +89,10 @@ export default function HomePage() {
                 {t("createQr")}
               </button>
               <button
+                aria-controls="qr-scan-panel"
                 aria-selected={mode === "scan"}
                 className="tool-mode-button"
+                id="mode-scan"
                 onClick={() => setMode("scan")}
                 role="tab"
                 type="button"
@@ -98,7 +102,19 @@ export default function HomePage() {
             </div>
           </div>
 
-          {mode === "create" ? <QrStudio /> : <QrScanner />}
+          {mode === "create" ? (
+            <div
+              aria-labelledby="mode-create"
+              id="qr-create-panel"
+              role="tabpanel"
+            >
+              <QrStudio />
+            </div>
+          ) : (
+            <div aria-labelledby="mode-scan" id="qr-scan-panel" role="tabpanel">
+              <QrScanner />
+            </div>
+          )}
         </section>
       </main>
 

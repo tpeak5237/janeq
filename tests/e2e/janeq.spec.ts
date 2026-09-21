@@ -20,6 +20,14 @@ function blankImageFile() {
   };
 }
 
+async function revealPayload(page: import("@playwright/test").Page) {
+  const payload = page.locator(".payload-value");
+  if (await payload.isVisible()) return payload;
+  await page.locator(".payload-disclosure summary").click();
+  await expect(payload).toBeVisible();
+  return payload;
+}
+
 test.describe("JaneQ generator", () => {
   test("opens directly into the generator and exposes export actions", async ({
     page,
@@ -33,7 +41,7 @@ test.describe("JaneQ generator", () => {
     await page.getByLabel("Website address").fill("example.com/classes?room=4");
 
     await expect(page.getByTestId("qr-preview").locator("img")).toBeVisible();
-    await expect(page.locator(".payload-value")).toHaveText(
+    await expect(await revealPayload(page)).toHaveText(
       "https://example.com/classes?room=4",
     );
     await expect(page.getByRole("button", { name: /^PNG$/ })).toBeEnabled();
@@ -48,10 +56,10 @@ test.describe("JaneQ generator", () => {
     await page.getByLabel("Network name (SSID)").fill("Library Wi-Fi");
     await page.getByLabel("Password").fill("local-only-123");
 
-    await expect(page.getByText(/WIFI:T:WPA/)).toBeVisible();
-    await expect(
-      page.getByText(/processed locally in this browser/),
-    ).toBeVisible();
+    await expect(await revealPayload(page)).toContainText("WIFI:T:WPA");
+    await expect(page.getByTestId("wifi-privacy")).toHaveText(
+      "Stays on this device.",
+    );
     await expect(page.getByTestId("qr-preview").locator("img")).toBeVisible();
   });
 
@@ -66,15 +74,14 @@ test.describe("JaneQ generator", () => {
     await page.getByLabel("Amount").fill("250.00");
 
     await expect(page.getByTestId("qr-preview").locator("img")).toBeVisible();
-    await expect(page.locator(".payload-value")).toContainText("5406250.00");
+    await expect(await revealPayload(page)).toContainText("5406250.00");
     await expect(page.getByText("081 234 5678", { exact: true })).toBeVisible();
     await expect(page.getByText("฿250.00", { exact: true })).toBeVisible();
-    await expect(page.getByText(/Generated locally in your browser/)).toBeVisible();
+    await expect(page.getByTestId("promptpay-disclaimer")).toContainText(
+      "cannot confirm whether payment succeeded",
+    );
     await expect(
-      page.getByText(/cannot verify whether a payment has been completed/),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Copy QR payload" }),
+      page.getByRole("button", { name: "Copy payload" }),
     ).toBeEnabled();
 
     await page.getByLabel("Amount").fill("");
@@ -101,7 +108,7 @@ test.describe("JaneQ generator", () => {
     await page.goto("/");
     await page.getByRole("tab", { name: "Scan QR" }).click();
     await expect(page.locator("#utility-heading")).toHaveText("Scan QR");
-    await expect(page.getByText("Ready to start the camera")).toBeVisible();
+    await expect(page.getByText("Start the camera to scan")).toBeVisible();
 
     await page.getByRole("tab", { name: "Create QR" }).click();
     await expect(page.getByLabel("Website address")).toBeVisible();
@@ -161,6 +168,7 @@ test.describe("JaneQ generator", () => {
       page.getByRole("region", { name: "QR scanner" }).getByText("QR detected").last(),
     ).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("javascript:alert(1)")).toBeVisible();
+    await expect(page.getByText("This is not a web link")).toBeVisible();
     await expect(page.getByRole("link", { name: "Open link" })).toHaveCount(0);
   });
 
@@ -181,7 +189,7 @@ test.describe("JaneQ generator", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/");
     await expect(
-      page.getByRole("heading", { name: "Your direct code" }),
+      page.getByRole("heading", { name: "Preview" }),
     ).toBeVisible();
     await expect(page.locator("body")).toHaveCSS("overflow-x", "visible");
   });
@@ -199,9 +207,7 @@ test.describe("JaneQ generator", () => {
     await expect(page.getByRole("heading", { name: "สร้าง QR" })).toBeVisible();
     await expect(page.getByLabel("ลิงก์เว็บไซต์")).toBeVisible();
     await page.getByLabel("ลิงก์เว็บไซต์").fill("example.com");
-    await expect(page.locator(".payload-value")).toHaveText(
-      "https://example.com/",
-    );
+    await expect(await revealPayload(page)).toHaveText("https://example.com/");
 
     await page.getByRole("button", { name: "เปลี่ยนเป็นภาษาอังกฤษ" }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");

@@ -46,6 +46,12 @@ export function isSafeExternalUrl(value: string): boolean {
   return getSafeExternalUrl(value) !== null;
 }
 
+const UNSAFE_URI_SCHEME = /^(javascript|data|file|vbscript|blob):/i;
+
+export function isUnsafeScanPayload(value: string): boolean {
+  return UNSAFE_URI_SCHEME.test(value.trim());
+}
+
 function isPromptPayPayload(value: string): boolean {
   return value.startsWith("000201") && value.includes("A000000677010111");
 }

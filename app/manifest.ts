@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "JaneQ — Direct QR Code Generator",
     short_name: "JaneQ",
-    description: "Direct, local-first QR codes without the nonsense.",
+    description: "Create and scan QR codes on this device.",
     start_url: "/",
     display: "standalone",
     background_color: "#eef2f3",

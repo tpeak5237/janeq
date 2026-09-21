@@ -11,14 +11,16 @@ import {
 import {
   classifyQrPayload,
   getSafeExternalUrl,
+  isUnsafeScanPayload,
   normalizeScanResult,
   type ScanPayloadClassification,
+  type ScanPayloadKind,
 } from "@/lib/scanner";
 import {
   QrCameraPipeline,
   type CameraInfo,
 } from "@/lib/qr-camera-pipeline";
-import { useCopy } from "@/lib/i18n";
+import { useCopy, type TranslationKey } from "@/lib/i18n";
 import { playScanSuccessSound, primeScanSuccessSound } from "@/lib/scan-sound";
 
 type InputMode = "camera" | "upload";
@@ -36,6 +38,18 @@ type ScannerStatus =
   | "error";
 
 const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
+
+const SCAN_KIND_KEYS: Record<ScanPayloadKind, TranslationKey> = {
+  url: "typeWebsite",
+  email: "typeEmail",
+  phone: "typePhone",
+  sms: "typeSms",
+  wifi: "typeWifi",
+  location: "typeLocation",
+  contact: "typeContact",
+  promptpay: "typePromptpay",
+  text: "typeText",
+};
 
 function cameraErrorStatus(error: unknown): ScannerStatus {
   if (typeof window !== "undefined" && !window.isSecureContext) {
@@ -188,8 +202,6 @@ export function QrScanner() {
       if (decoded) handleDecodedValue(decoded);
     } catch {
       setStatus("no-result");
-    } finally {
-      clearImagePreview();
     }
   }
 
@@ -259,10 +271,6 @@ export function QrScanner() {
   return (
     <section aria-label={t("scannerAria")} className="scanner-shell">
       <div className="scanner-heading">
-        <div>
-          <span className="workspace-kicker">{t("processedLocally")}</span>
-          <h2>{t("scanQr")}</h2>
-        </div>
         <p>{t("scannerDescription")}</p>
       </div>
 
@@ -362,7 +370,6 @@ export function QrScanner() {
               <span>{t("dropImageHere")}</span>
               <input
                 accept="image/*"
-                capture="environment"
                 onChange={handleImageUpload}
                 type="file"
               />
@@ -391,8 +398,15 @@ export function QrScanner() {
               <span className="workspace-kicker">{t("qrDetected")}</span>
               {safeUrl ? (
                 <p className="scanner-hostname">{safeUrl.hostname}</p>
-              ) : null}
+              ) : (
+                <p className="scanner-kind">{t(SCAN_KIND_KEYS[result.kind])}</p>
+              )}
               <code className="scanner-result-value">{result.label}</code>
+              {isUnsafeScanPayload(result.label) ? (
+                <p className="scanner-unsafe" role="status">
+                  {t("scannerUnsafeScheme")}
+                </p>
+              ) : null}
               <div className="scanner-actions">
                 <button className="action-button" onClick={() => void copyResult()} type="button">
                   {t("copyResult")}

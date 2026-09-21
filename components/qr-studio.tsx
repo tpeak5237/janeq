@@ -11,6 +11,7 @@ import {
 import { Icon } from "@/components/icons";
 import { JaneQMark } from "@/components/janeq-mark";
 import {
+  localizedPayloadLabel,
   localizedPayloadMessage,
   localizedReliabilityMessage,
   translate,
@@ -25,9 +26,9 @@ import {
   DEFAULT_FIELDS,
   formatPromptPayId,
   getReliabilityMessages,
+  LogoProcessError,
   makeQrFilename,
   normalizePromptPayAmount,
-  payloadLabel,
   processLogoFile,
   QR_TYPE_META,
   QrCustomization,
@@ -52,54 +53,26 @@ const QR_TYPES: QrType[] = [
 
 const TYPE_COPY_KEYS: Record<
   QrType,
-  { label: TranslationKey; short: TranslationKey; description: TranslationKey }
+  { label: TranslationKey; short: TranslationKey }
 > = {
-  url: {
-    label: "typeWebsiteLong",
-    short: "typeWebsite",
-    description: "typeWebsiteDescription",
-  },
-  text: {
-    label: "typeTextLong",
-    short: "typeText",
-    description: "typeTextDescription",
-  },
-  email: {
-    label: "typeEmail",
-    short: "typeEmail",
-    description: "typeEmailDescription",
-  },
-  phone: {
-    label: "typePhone",
-    short: "typePhone",
-    description: "typePhoneDescription",
-  },
-  sms: {
-    label: "typeSms",
-    short: "typeSms",
-    description: "typeSmsDescription",
-  },
-  wifi: {
-    label: "typeWifi",
-    short: "typeWifi",
-    description: "typeWifiDescription",
-  },
-  contact: {
-    label: "typeContact",
-    short: "typeContact",
-    description: "typeContactDescription",
-  },
-  location: {
-    label: "typeLocation",
-    short: "typeLocation",
-    description: "typeLocationDescription",
-  },
-  promptpay: {
-    label: "typePromptpay",
-    short: "typePromptpay",
-    description: "typePromptpayDescription",
-  },
+  url: { label: "typeWebsiteLong", short: "typeWebsite" },
+  text: { label: "typeTextLong", short: "typeText" },
+  email: { label: "typeEmail", short: "typeEmail" },
+  phone: { label: "typePhone", short: "typePhone" },
+  sms: { label: "typeSms", short: "typeSms" },
+  wifi: { label: "typeWifi", short: "typeWifi" },
+  contact: { label: "typeContact", short: "typeContact" },
+  location: { label: "typeLocation", short: "typeLocation" },
+  promptpay: { label: "typePromptpay", short: "typePromptpay" },
 };
+
+const LOGO_ERROR_KEYS = {
+  type: "errorLogoType",
+  size: "errorLogoSize",
+  decode: "errorLogoDecode",
+  dimensions: "errorLogoDimensions",
+  process: "errorLogoProcess",
+} as const satisfies Record<string, TranslationKey>;
 
 const PRESET_LOGO_DATA_URL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
@@ -119,8 +92,11 @@ interface QrArtifact {
 type LogoSource = "none" | "preset" | "upload";
 
 function Field({
+  describedBy,
+  disabled,
   hint,
   id,
+  invalid,
   label,
   value,
   onChange,
@@ -128,8 +104,11 @@ function Field({
   type = "text",
   inputMode,
 }: {
+  describedBy?: string;
+  disabled?: boolean;
   hint?: string;
   id: string;
+  invalid?: boolean;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -137,15 +116,18 @@ function Field({
   type?: string;
   inputMode?: InputHTMLAttributes<HTMLInputElement>["inputMode"];
 }) {
+  const hintId = hint ? `${id}-hint` : undefined;
   return (
     <div className="field">
       <label className="field-label" htmlFor={id}>
         {label}
       </label>
       <input
-        aria-describedby={hint ? `${id}-hint` : undefined}
+        aria-describedby={[hintId, describedBy].filter(Boolean).join(" ") || undefined}
+        aria-invalid={invalid || undefined}
         autoComplete="off"
         className="field-input"
+        disabled={disabled}
         id={id}
         inputMode={inputMode}
         onChange={(event) => onChange(event.target.value)}
@@ -154,7 +136,7 @@ function Field({
         value={value}
       />
       {hint ? (
-        <span className="field-hint" id={`${id}-hint`}>
+        <span className="field-hint" id={hintId}>
           {hint}
         </span>
       ) : null}
@@ -311,28 +293,19 @@ export function QrStudio() {
       setLogoDataUrl(processedLogo);
       setLogoSource("upload");
       setLogoLabel(file.name);
+      setCustomization((current) =>
+        current.errorCorrection === "H"
+          ? current
+          : { ...current, errorCorrection: "H" },
+      );
       setNotice(t("noticeLogoProcessing"));
     } catch (error) {
       setLogoDataUrl(null);
       setLogoSource("none");
       setLogoLabel(null);
-      const message =
-        error instanceof Error
-          ? error.message
-          : "The logo could not be processed.";
-      setLogoError(
-        message.includes("PNG") ||
-          message.includes("JPEG") ||
-          message.includes("WebP")
-          ? t("errorLogoType")
-          : message.includes("2 MB")
-            ? t("errorLogoSize")
-            : message.includes("decoded")
-              ? t("errorLogoDecode")
-              : message.includes("dimensions")
-                ? t("errorLogoDimensions")
-                : t("errorLogoProcess"),
-      );
+      const code =
+        error instanceof LogoProcessError ? error.code : "process";
+      setLogoError(t(LOGO_ERROR_KEYS[code]));
     } finally {
       setIsLogoProcessing(false);
       event.target.value = "";
@@ -345,10 +318,16 @@ export function QrStudio() {
     if (source === "none") {
       setLogoDataUrl(null);
       setLogoLabel(null);
+      return;
     }
     if (source === "preset") {
       setLogoDataUrl(PRESET_LOGO_DATA_URL);
       setLogoLabel("theerapat.org mark");
+      setCustomization((current) =>
+        current.errorCorrection === "H"
+          ? current
+          : { ...current, errorCorrection: "H" },
+      );
     }
   }
 
@@ -419,12 +398,13 @@ export function QrStudio() {
       return;
     }
     const document = printWindow.document;
-    document.title = `JaneQ — ${payloadLabel(type, fields)}`;
+    const label = localizedPayloadLabel(locale, type, fields);
+    document.title = `JaneQ — ${label}`;
     const style = document.createElement("style");
     style.textContent =
       "body{align-items:center;display:flex;flex-direction:column;font-family:system-ui,sans-serif;gap:18px;justify-content:center;min-height:100vh;margin:0}img{height:min(70vw,480px);max-width:70vw}p{color:#52606a;font-size:14px}";
     const image = document.createElement("img");
-    image.alt = t("altQr", { label: payloadLabel(type, fields) });
+    image.alt = t("altQr", { label });
     image.src = svgDataUrl(artifact.svg);
     const caption = document.createElement("p");
     caption.textContent = t("printCaption");
@@ -448,7 +428,7 @@ export function QrStudio() {
         <div className="workspace-heading">
           <div>
             <span className="workspace-kicker">{t("workspaceKicker")}</span>
-            <h3>{t("workspaceQuestion")}</h3>
+            <h2>{t("workspaceQuestion")}</h2>
           </div>
           <span className="control-caption">
             {t(TYPE_COPY_KEYS[type].label)}
@@ -478,9 +458,6 @@ export function QrStudio() {
                   {meta.icon}
                 </span>
                 <span className="type-button-label">{t(copyKeys.short)}</span>
-                <span className="type-button-description">
-                  {t(copyKeys.description)}
-                </span>
               </button>
             );
           })}
@@ -488,17 +465,15 @@ export function QrStudio() {
 
         <div className="control-section">
           <div className="control-section-heading">
-            <h4>
-              {t(TYPE_COPY_KEYS[type].label)}
-              {t("detailsSuffix") ? <> {t("detailsSuffix")}</> : null}
-            </h4>
-            <span className="control-caption">{t("requiredCaption")}</span>
+            <h3>{t(TYPE_COPY_KEYS[type].label)}</h3>
           </div>
           {type === "url" ? (
             <div className="field-grid">
               <Field
+                describedBy={localizedPayload.error ? "payload-error" : undefined}
                 hint={t("websiteHint")}
                 id="qr-url"
+                invalid={Boolean(localizedPayload.error)}
                 label={t("websiteAddress")}
                 onChange={(value) => updateField("url", value)}
                 placeholder={t("websitePlaceholder")}
@@ -585,6 +560,7 @@ export function QrStudio() {
                 value={fields.wifiSsid}
               />
               <Field
+                disabled={fields.wifiSecurity === "nopass"}
                 id="qr-wifi-password"
                 label={t("password")}
                 onChange={(value) => updateField("wifiPassword", value)}
@@ -624,7 +600,7 @@ export function QrStudio() {
                 />
                 <span className="check-label">{t("hiddenNetwork")}</span>
               </label>
-              <div className="field-full privacy-inline" role="note">
+              <div className="field-full privacy-inline" role="note" data-testid="wifi-privacy">
                 <Icon name="shield" size={16} />
                 <span>{t("wifiPrivacy")}</span>
               </div>
@@ -648,7 +624,7 @@ export function QrStudio() {
               />
               <Field
                 id="qr-contact-phone"
-                label={`${t("phoneNumber")} (optional)`}
+                label={t("contactPhoneOptional")}
                 onChange={(value) => updateField("contactPhone", value)}
                 placeholder={t("phonePlaceholder")}
                 type="tel"
@@ -656,7 +632,7 @@ export function QrStudio() {
               />
               <Field
                 id="qr-contact-email"
-                label={`${t("emailAddress")} (optional)`}
+                label={t("contactEmailOptional")}
                 onChange={(value) => updateField("contactEmail", value)}
                 placeholder={t("emailPlaceholder")}
                 type="email"
@@ -696,8 +672,10 @@ export function QrStudio() {
           {type === "promptpay" ? (
             <div className="field-grid">
               <Field
+                describedBy={localizedPayload.error ? "payload-error" : undefined}
                 hint={t("promptpayIdHint")}
                 id="qr-promptpay-id"
+                invalid={Boolean(localizedPayload.error)}
                 label={t("promptpayId")}
                 onChange={(value) => updateField("promptpayId", value)}
                 placeholder={t("promptpayIdPlaceholder")}
@@ -708,20 +686,23 @@ export function QrStudio() {
                 hint={t("promptpayAmountHint")}
                 id="qr-promptpay-amount"
                 inputMode="decimal"
+                invalid={Boolean(
+                  localizedPayload.error && fields.promptpayAmount.trim(),
+                )}
                 label={t("promptpayAmount")}
                 onChange={(value) => updateField("promptpayAmount", value)}
                 placeholder={t("promptpayAmountPlaceholder")}
                 type="text"
                 value={fields.promptpayAmount}
               />
-              <div className="field-full privacy-inline" role="note">
-                <Icon name="shield" size={16} />
-                <span>{t("promptpayPrivacy")}</span>
-              </div>
             </div>
           ) : null}
           {localizedPayload.error ? (
-            <div aria-live="polite" className="validation-stack">
+            <div
+              aria-live="polite"
+              className="validation-stack"
+              id="payload-error"
+            >
               <div
                 className="validation-message validation-message-warning"
                 role="alert"
@@ -888,16 +869,14 @@ export function QrStudio() {
             </div>
             </div>
             <div className="validation-stack">
-              {localizedReliabilityMessages.map((message) => (
+              {localizedReliabilityMessages
+                .filter((message) => message.severity === "info")
+                .map((message) => (
                 <div
                   className={`validation-message validation-message-${message.severity}`}
                   key={message.id}
-                  role={message.severity === "warning" ? "status" : undefined}
                 >
-                  <Icon
-                    name={message.severity === "warning" ? "warning" : "shield"}
-                    size={16}
-                  />
+                  <Icon name="shield" size={16} />
                   <span>
                     <strong>{message.title}</strong>
                     {message.body}
@@ -965,10 +944,10 @@ export function QrStudio() {
         <div className="preview-heading">
           <div>
             <span className="preview-kicker">{t("livePreview")}</span>
-            <h3>{t("directCode")}</h3>
+            <h2>{t("previewHeading")}</h2>
           </div>
           <span aria-live="polite" className="status-label">
-            {isGenerating ? t("updating") : t("browserOnly")}
+            {isGenerating ? t("updating") : t("localStatus")}
           </span>
         </div>
         <div
@@ -977,7 +956,7 @@ export function QrStudio() {
         >
           {previewSource ? (
             <img
-              alt={t("altQr", { label: payloadLabel(type, fields) })}
+              alt={t("altQr", { label: localizedPayloadLabel(locale, type, fields) })}
               className="qr-preview-image"
               src={previewSource}
             />
@@ -989,7 +968,6 @@ export function QrStudio() {
               <strong>
                 {isGenerating ? t("drawingCode") : t("emptyPreview")}
               </strong>
-              <p>{localizedPayload.error ?? t("emptyPrompt")}</p>
             </div>
           )}
         </div>
@@ -1008,9 +986,28 @@ export function QrStudio() {
                   : t("waitingInput")}
             </span>
           </div>
-          <p className="status-message">
-            {notice ?? (isValid ? t("statusValid") : t("statusWaiting"))}
-          </p>
+          {notice ? <p className="status-message">{notice}</p> : null}
+          {localizedReliabilityMessages.some(
+            (message) => message.severity === "warning",
+          ) ? (
+            <div className="validation-stack preview-reliability" aria-live="polite">
+              {localizedReliabilityMessages
+                .filter((message) => message.severity === "warning")
+                .map((message) => (
+                  <div
+                    className="validation-message validation-message-warning"
+                    key={message.id}
+                    role="status"
+                  >
+                    <Icon name="warning" size={16} />
+                    <span>
+                      <strong>{message.title}</strong>
+                      {message.body}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          ) : null}
           {type === "promptpay" && payloadResult.payload ? (
             <div className="promptpay-summary" role="note">
               <span className="promptpay-summary-label">{t("typePromptpay")}</span>
@@ -1023,16 +1020,11 @@ export function QrStudio() {
             </div>
           ) : null}
           {payloadResult.payload ? (
-            <details className="payload-disclosure" open>
+            <details className="payload-disclosure">
               <summary>{t("payloadLabel")}</summary>
               <code className="payload-value">{payloadResult.payload}</code>
             </details>
           ) : null}
-          <div className="preview-meta">
-            <span>✓ {t("directPayload")}</span>
-            <span>✓ {t("noAccount")}</span>
-            <span>✓ {t("noExpiry")}</span>
-          </div>
           <div className="action-row">
             <button
               className="action-button action-button-primary"
@@ -1078,7 +1070,7 @@ export function QrStudio() {
           </div>
         </div>
         {type === "promptpay" && payloadResult.payload ? (
-          <div className="promptpay-notes" role="note">
+          <div className="promptpay-notes" role="note" data-testid="promptpay-disclaimer">
             <p>{t("promptpayRecipientCheck")}</p>
             <p>{t("promptpayPaymentDisclaimer")}</p>
           </div>

@@ -52,7 +52,6 @@ describe("JaneQ direct payloads", () => {
       wifiHidden: true,
     });
     expect(result.payload).toBe("WIFI:T:WPA;S:Studio\\;Network;P:p\\,a\\:ss\\\\word;H:true;;");
-    expect(result.hint).toContain("locally");
   });
 
   it("validates contact and location fields", () => {
@@ -125,6 +124,25 @@ describe("JaneQ reliability helpers", () => {
       true,
     );
     expect(messages.map((message) => message.id)).toEqual(["contrast", "quiet-zone", "resolution", "logo-correction"]);
+  });
+
+  it("warns when the QR is light-on-dark even if contrast is high", () => {
+    const messages = getReliabilityMessages(
+      { ...DEFAULT_CUSTOMIZATION, foreground: "#ffffff", background: "#101922" },
+      false,
+    );
+    expect(messages.map((message) => message.id)).toContain("polarity");
+    expect(messages.some((message) => message.id === "contrast")).toBe(false);
+  });
+
+  it("escapes untrusted color values in SVG output", () => {
+    const matrix = createQrMatrix("hello", "M");
+    const svg = renderQrSvg(matrix, {
+      ...DEFAULT_CUSTOMIZATION,
+      foreground: '#000"><script>alert(1)</script>',
+    });
+    expect(svg).not.toContain("<script>");
+    expect(svg).toContain("&quot;");
   });
 
   it("creates predictable filenames for exports", () => {

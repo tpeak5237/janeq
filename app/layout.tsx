@@ -11,21 +11,20 @@ const notoSansThai = Noto_Sans_Thai({
   display: "swap",
   subsets: ["thai", "latin"],
   variable: "--font-noto-sans-thai",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "600", "700"],
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "JaneQ — Local QR Generator and Scanner",
   description:
-    "Create and scan QR codes locally in your browser with camera or image input. No account, tracking redirect, or QR content upload.",
+    "Create and scan QR codes on this device. No account, no tracking redirect.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     url: siteUrl,
     title: "JaneQ — Local QR Generator and Scanner",
-    description:
-      "Generate direct QR codes or scan them locally with your camera or an image.",
+    description: "Create or scan a QR code on this device. No account or tracking redirect.",
     siteName: "JaneQ",
     images: [
       {
@@ -39,12 +38,13 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "JaneQ — Local QR Generator and Scanner",
-    description:
-      "Create or scan a QR code in your browser. No account or QR content upload.",
+    description: "Create or scan a QR code on this device. No account or tracking redirect.",
     images: ["/og-image.svg"],
   },
   robots: { index: true, follow: true },
 };
+
+const bootScript = `try{var t=localStorage.getItem("janeq-theme");var l=localStorage.getItem("janeq-locale");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t;if(l==="th")document.documentElement.lang="th";}catch(e){}`;
 
 export default function RootLayout({
   children,
@@ -52,6 +52,7 @@ export default function RootLayout({
   return (
     <html className={notoSansThai.variable} lang="en" suppressHydrationWarning>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: bootScript }} />
         <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
