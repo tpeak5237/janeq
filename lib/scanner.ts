@@ -15,6 +15,18 @@ export interface ScanPayloadClassification {
   openable: boolean;
 }
 
+export const DEFAULT_DUPLICATE_COOLDOWN_MS = 1000;
+
+export function isDuplicateScan(
+  value: string,
+  previousValue: string,
+  previousAt: number,
+  now: number,
+  cooldownMs = DEFAULT_DUPLICATE_COOLDOWN_MS,
+): boolean {
+  return value === previousValue && now - previousAt < cooldownMs;
+}
+
 export function normalizeScanResult(value: string): string {
   const normalized = value.trim();
   if (!normalized) throw new Error("No QR code found");

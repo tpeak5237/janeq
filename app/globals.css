@@ -1787,6 +1787,13 @@ html[lang="th"] .field-textarea {
   position: absolute;
 }
 
+.scanner-full-frame-hint {
+  color: rgb(var(--color-muted));
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 10px 14px 0;
+}
+
 .scanner-actions {
   align-items: center;
   display: flex;
@@ -1867,6 +1874,16 @@ html[lang="th"] .field-textarea {
   gap: 7px;
 }
 
+.scanner-light-hint {
+  background: rgb(var(--color-coral) / 0.1);
+  border-left: 2px solid rgb(var(--color-coral));
+  color: rgb(var(--color-ink));
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+}
+
 .status-dot {
   background: rgb(var(--color-muted));
   border-radius: 50%;
@@ -1891,6 +1908,10 @@ html[lang="th"] .field-textarea {
   flex-direction: column;
   min-height: 100%;
   padding: 22px;
+}
+
+.scanner-result-panel-success {
+  animation: scanner-result-in 220ms ease-out both;
 }
 
 .scanner-result-panel .scanner-actions {
@@ -1939,6 +1960,23 @@ html[lang="th"] .field-textarea {
   padding-top: 14px;
 }
 
+@keyframes scanner-result-in {
+  from {
+    opacity: 0.35;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanner-result-panel-success {
+    animation: none;
+  }
+}
+
 @media (max-width: 760px) {
   .utility-main {
     padding: 26px 0 48px;
@@ -1984,6 +2022,23 @@ html[lang="th"] .field-textarea {
   .scanner-result-panel {
     margin-top: 14px;
     min-height: 220px;
+  }
+
+  .scanner-result-panel-empty {
+    background: transparent;
+    border: 0;
+    min-height: 0;
+    padding: 2px 0;
+  }
+
+  .scanner-result-panel-empty .scanner-empty-state p {
+    font-size: 11px;
+    margin-top: 7px;
+  }
+
+  .camera-frame {
+    aspect-ratio: 3 / 4;
+    max-height: min(64vh, 560px);
   }
 
   .image-dropzone {

@@ -18,6 +18,7 @@ The initial JaneQ pass is designed against WCAG 2.2 AA fundamentals.
 - [x] The camera preview has an accessible label, and the image picker accepts image files with a labelled drop area.
 - [ ] Test with a screen reader and real keyboard-only flow on each supported browser before release.
 - [ ] Test downloaded QR images with representative low-light, small-size, and print scenarios.
+- [ ] Test the low-light hint, torch control when available, and full-frame guidance with a screen reader and keyboard-only flow.
 
 ## Manual release checks
 
