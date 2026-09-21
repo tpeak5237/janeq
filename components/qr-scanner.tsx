@@ -19,6 +19,7 @@ import {
   type CameraInfo,
 } from "@/lib/qr-camera-pipeline";
 import { useCopy } from "@/lib/i18n";
+import { playScanSuccessSound, primeScanSuccessSound } from "@/lib/scan-sound";
 
 type InputMode = "camera" | "upload";
 type ScannerStatus =
@@ -86,6 +87,7 @@ export function QrScanner() {
       const classification = classifyQrPayload(normalizeScanResult(value));
       detectedRef.current = true;
       pipelineRef.current?.stop();
+      playScanSuccessSound();
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate?.(35);
       }
@@ -117,6 +119,7 @@ export function QrScanner() {
     setCopyNotice(null);
     setLowLight(false);
     setStatus("requesting");
+    primeScanSuccessSound();
 
     try {
       await pipelineRef.current?.start(deviceId);
@@ -178,6 +181,7 @@ export function QrScanner() {
     imageObjectUrlRef.current = objectUrl;
     setImagePreviewUrl(objectUrl);
     setStatus("decoding");
+    primeScanSuccessSound();
     try {
       pipelineRef.current?.stop();
       const decoded = await pipelineRef.current?.decodeImage(file);
