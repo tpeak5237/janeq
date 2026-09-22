@@ -37,7 +37,7 @@ JaneQ creates static QR codes. The destination is encoded inside the downloaded 
 
 ## Local setup
 
-Requirements: Node.js 20+ and npm.
+Requirements: Node.js 24+ and npm.
 
 ```bash
 npm ci
@@ -62,7 +62,7 @@ npm run build
 
 JaneQ has no runtime secrets or persistent service. The static output can be deployed to:
 
-- **Cloudflare Pages:** build command `npm run build`, output directory `out`, Node version 20.
+- **Cloudflare Pages:** build command `npm run build`, output directory `out`, Node version 24.
 - **Vercel:** import the repository; the `output: "export"` setting in `next.config.mjs` produces a static deployment.
 - **GitHub Pages:** publish the contents of `out/` from a workflow or static-hosting action. Use a custom domain or configure `basePath`/`assetPrefix` if the project is served under a repository subpath.
 

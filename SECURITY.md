@@ -32,7 +32,7 @@ JaneQ does not validate or guarantee the safety of encoded destinations. Users s
 - Run `npm audit` during release review and update dependencies when advisories affect the runtime or build chain.
 - The app should be served over HTTPS in production so browser clipboard and file APIs receive their secure-context permissions.
 
-The current runtime audit (`npm audit --omit=dev --audit-level=high`) still reports two high-severity findings for Next.js 16.2.12's nested PostCSS 8.4.31 dependency. The application uses static export, does not expose Next's server runtime or image optimizer, and has no user-controlled CSS/source-map input. The Sharp dependency is pinned through `package.json` overrides to the patched 0.35.3 release. Do not run `npm audit fix --force` blindly: npm currently proposes a destructive framework downgrade for the remaining advisory.
+The dependency baseline updated on 2026-09-22 uses Next.js 16.3.5 and pins Sharp 0.35.4. A clean `npm ci` followed by `npm audit` reported zero findings. Re-run the audit during release review; this dated local result does not replace CI, deployment, or live verification.
 
 ## Not implemented by design
 
