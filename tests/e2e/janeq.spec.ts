@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 import QRCode from "qrcode";
 
 async function qrImageFile(value: string) {
@@ -196,6 +197,16 @@ test.describe("JaneQ generator", () => {
     await expect(preview).toHaveAttribute("src", latestPreview!);
     await expect(page.getByRole("button", { name: /^PNG$/ })).toBeEnabled();
     await expect(page.getByRole("button", { name: /^SVG$/ })).toBeEnabled();
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: /^SVG$/ }).click(),
+    ]);
+    const downloadPath = await download.path();
+    expect(downloadPath).toBeTruthy();
+    await expect(await readFile(downloadPath!, "utf8")).toBe(
+      decodeURIComponent(latestPreview!.split(",")[1]),
+    );
   });
 
   test("builds a Wi-Fi code and keeps the privacy boundary visible", async ({
