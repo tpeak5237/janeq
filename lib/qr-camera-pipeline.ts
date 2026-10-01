@@ -251,6 +251,7 @@ export class QrCameraPipeline {
     const engine = (await QrScanner.createQrEngine()) as QrEngine;
     let fallbackWorker: Worker | null = null;
     try {
+      if (decodeId !== this.imageDecodeId) throw new Error("Image scan cancelled");
       try {
         const decoded = await QrScanner.scanImage(file, {
           qrEngine: engine,
@@ -259,6 +260,7 @@ export class QrCameraPipeline {
         if (decodeId !== this.imageDecodeId) throw new Error("Image scan cancelled");
         return decoded.data;
       } catch (error) {
+        if (decodeId !== this.imageDecodeId) throw error;
         if (!hasDetector(engine)) throw error;
         const workerModule = await import("qr-scanner/qr-scanner-worker.min.js");
         fallbackWorker = workerModule.createWorker();
