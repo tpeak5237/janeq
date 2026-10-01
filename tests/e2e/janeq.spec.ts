@@ -82,6 +82,28 @@ async function delayNativeQrDetection(page: import("@playwright/test").Page) {
   });
 }
 
+async function hasCreatedImageObjectUrl(
+  page: import("@playwright/test").Page,
+  url: string,
+) {
+  return page.evaluate((trackedUrl) =>
+    (window as typeof window & {
+      __imageObjectUrls: { created: string[]; revoked: string[] };
+    }).__imageObjectUrls.created.includes(trackedUrl),
+  url);
+}
+
+async function hasRevokedImageObjectUrl(
+  page: import("@playwright/test").Page,
+  url: string,
+) {
+  return page.evaluate((trackedUrl) =>
+    (window as typeof window & {
+      __imageObjectUrls: { created: string[]; revoked: string[] };
+    }).__imageObjectUrls.revoked.includes(trackedUrl),
+  url);
+}
+
 test.describe("JaneQ generator", () => {
   test("opens directly into the generator and exposes export actions", async ({
     page,
@@ -422,31 +444,33 @@ test.describe("JaneQ generator", () => {
     const fileInput = page.locator('input[type="file"]');
     const file = await qrImageFile("https://example.com/repeated-selection");
 
-    for (const expectedCreated of [1, 2]) {
+    const previewUrls: string[] = [];
+    for (let selection = 0; selection < 2; selection += 1) {
+      const previousPreviewUrl = previewUrls.at(-1);
       await fileInput.setInputFiles(file);
+      await expect(fileInput).toHaveValue("");
+      await expect.poll(() => page.locator('img[alt="Selected QR image preview"]')
+        .getAttribute("src")).not.toBe(previousPreviewUrl);
       await expect(page.locator(".scanner-result-value")).toHaveText(
         "https://example.com/repeated-selection",
         { timeout: 15_000 },
       );
-      await expect.poll(() => page.evaluate(() =>
-        (window as typeof window & {
-          __imageObjectUrls: { created: string[]; revoked: string[] };
-        }).__imageObjectUrls.created.length,
-      )).toBe(expectedCreated);
-      await expect.poll(() => page.evaluate(() =>
-        (window as typeof window & {
-          __imageObjectUrls: { created: string[]; revoked: string[] };
-        }).__imageObjectUrls.revoked.length,
-      )).toBe(expectedCreated - 1);
+      const previewUrl = await page.locator('img[alt="Selected QR image preview"]')
+        .getAttribute("src");
+      expect(previewUrl).toBeTruthy();
+      previewUrls.push(previewUrl as string);
+      await expect.poll(() => hasCreatedImageObjectUrl(page, previewUrl as string))
+        .toBe(true);
+      if (previousPreviewUrl) {
+        await expect.poll(() => hasRevokedImageObjectUrl(page, previousPreviewUrl))
+          .toBe(true);
+      }
     }
 
     await page.getByRole("tab", { name: "Create QR" }).click();
     await expect(page.getByLabel("Website address")).toBeVisible();
-    await expect.poll(() => page.evaluate(() =>
-      (window as typeof window & {
-        __imageObjectUrls: { created: string[]; revoked: string[] };
-      }).__imageObjectUrls.revoked.length,
-    )).toBe(2);
+    await expect.poll(() => hasRevokedImageObjectUrl(page, previewUrls[1]))
+      .toBe(true);
   });
 
   test("cancels an in-flight image decode when switching back to camera", async ({
@@ -465,14 +489,15 @@ test.describe("JaneQ generator", () => {
         __controlledQrDetection: { started: boolean };
       }).__controlledQrDetection.started,
     );
+    const previewUrl = await page.locator('img[alt="Selected QR image preview"]')
+      .getAttribute("src");
+    expect(previewUrl).toBeTruthy();
 
     await page.getByRole("tab", { name: "Camera" }).click();
     await expect(page.getByText("Start the camera to scan")).toBeVisible();
-    await expect.poll(() => page.evaluate(() =>
-      (window as typeof window & {
-        __imageObjectUrls: { created: string[]; revoked: string[] };
-      }).__imageObjectUrls.revoked.length,
-    )).toBe(1);
+    await expect(page.locator('img[alt="Selected QR image preview"]')).toHaveCount(0);
+    await expect.poll(() => hasRevokedImageObjectUrl(page, previewUrl as string))
+      .toBe(true);
 
     await page.evaluate(() => {
       const state = (window as typeof window & {
