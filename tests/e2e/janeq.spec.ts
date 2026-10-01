@@ -307,7 +307,7 @@ test.describe("JaneQ generator", () => {
       await expect(page).toHaveURL("http://127.0.0.1:3000/");
       await expect.poll(() => popupCount).toBe(0);
       if (payload !== "blob:https://example.com/1234") {
-        await page.getByRole("button", { name: "Scan another QR" }).click();
+        await page.getByRole("button", { name: "Scan another" }).click();
       }
     }
   });
