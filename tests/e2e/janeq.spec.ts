@@ -160,7 +160,11 @@ test.describe("JaneQ generator", () => {
   }) => {
     await delayFirstLogoDecode(page);
     await page.goto("/");
-    await page.locator(".control-disclosure").filter({ hasText: "Logo" }).locator("summary").click();
+    await page
+      .locator(".control-disclosure")
+      .filter({ has: page.getByRole("button", { name: "theerapat.org mark" }) })
+      .locator("summary")
+      .click();
     await page.getByRole("button", { name: "theerapat.org mark" }).click();
     await page.getByLabel("Website address").fill("https://example.com/first");
 
