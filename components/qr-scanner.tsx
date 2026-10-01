@@ -75,6 +75,7 @@ export function QrScanner() {
   const pipelineRef = useRef<QrCameraPipeline | null>(null);
   const detectedRef = useRef(false);
   const imageObjectUrlRef = useRef<string | null>(null);
+  const imageDecodeRequestRef = useRef(0);
   const startingCameraRef = useRef(false);
   const [inputMode, setInputMode] = useState<InputMode>("camera");
   const [status, setStatus] = useState<ScannerStatus>("idle");
@@ -87,12 +88,12 @@ export function QrScanner() {
   const [lowLight, setLowLight] = useState(false);
   const [copyNotice, setCopyNotice] = useState<string | null>(null);
 
-  function clearImagePreview() {
+  function clearImagePreview(updateState = true) {
     if (imageObjectUrlRef.current) {
       URL.revokeObjectURL(imageObjectUrlRef.current);
       imageObjectUrlRef.current = null;
     }
-    setImagePreviewUrl(null);
+    if (updateState) setImagePreviewUrl(null);
   }
 
   function handleDecodedValue(value: string) {
@@ -169,8 +170,10 @@ export function QrScanner() {
 
   function selectInputMode(nextMode: InputMode) {
     if (nextMode === inputMode) return;
+    imageDecodeRequestRef.current += 1;
+    pipelineRef.current?.stop();
+    clearImagePreview();
     if (nextMode === "upload") {
-      pipelineRef.current?.stop();
       setLowLight(false);
       setHasTorch(false);
       setTorchOn(false);
@@ -180,6 +183,8 @@ export function QrScanner() {
   }
 
   async function decodeImage(file: File) {
+    const requestId = ++imageDecodeRequestRef.current;
+    pipelineRef.current?.stop();
     clearImagePreview();
     resetResult();
     if (!file.type.startsWith("image/")) {
@@ -197,10 +202,11 @@ export function QrScanner() {
     setStatus("decoding");
     primeScanSuccessSound();
     try {
-      pipelineRef.current?.stop();
       const decoded = await pipelineRef.current?.decodeImage(file);
+      if (requestId !== imageDecodeRequestRef.current) return;
       if (decoded) handleDecodedValue(decoded);
     } catch {
+      if (requestId !== imageDecodeRequestRef.current) return;
       setStatus("no-result");
     }
   }
@@ -247,9 +253,10 @@ export function QrScanner() {
     });
     pipelineRef.current = pipeline;
     return () => {
+      imageDecodeRequestRef.current += 1;
       pipeline.destroy();
       pipelineRef.current = null;
-      clearImagePreview();
+      clearImagePreview(false);
     };
   }, []);
 
