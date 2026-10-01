@@ -31,16 +31,20 @@ async function revealPayload(page: import("@playwright/test").Page) {
 async function trackImageObjectUrls(page: import("@playwright/test").Page) {
   await page.addInitScript(() => {
     const state = { created: [] as string[], revoked: [] as string[] };
+    const trackedUrls = new Set<string>();
     const createObjectUrl = URL.createObjectURL.bind(URL);
     const revokeObjectUrl = URL.revokeObjectURL.bind(URL);
     Object.defineProperty(window, "__imageObjectUrls", { value: state });
     URL.createObjectURL = (blob) => {
       const url = createObjectUrl(blob);
-      state.created.push(url);
+      if (blob instanceof File) {
+        state.created.push(url);
+        trackedUrls.add(url);
+      }
       return url;
     };
     URL.revokeObjectURL = (url) => {
-      state.revoked.push(url);
+      if (trackedUrls.delete(url)) state.revoked.push(url);
       revokeObjectUrl(url);
     };
   });
