@@ -133,6 +133,127 @@ test.describe("JaneQ generator", () => {
     ).toBeVisible();
   });
 
+  test("shows the unavailable-camera state when the browser has no camera API", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "mediaDevices", {
+        configurable: true,
+        value: {},
+      });
+    });
+    await page.goto("/");
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("button", { name: "Start camera" }).click();
+
+    await expect(
+      page.getByText("This browser does not support camera access."),
+    ).toBeVisible();
+  });
+
+  test("shows the no-camera state when no camera is available", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "mediaDevices", {
+        configurable: true,
+        value: {
+          getUserMedia: async () => {
+            throw new DOMException("No camera available", "NotFoundError");
+          },
+        },
+      });
+    });
+    await page.goto("/");
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("button", { name: "Start camera" }).click();
+
+    await expect(page.getByText("No camera was found on this device."))
+      .toBeVisible();
+  });
+
+  test("stops a late camera stream after cancelling the permission request", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const camera = { resolve: null as null | ((stream: unknown) => void), stopCount: 0 };
+      Object.defineProperty(window, "__cameraTest", {
+        configurable: false,
+        value: camera,
+      });
+      Object.defineProperty(navigator, "mediaDevices", {
+        configurable: true,
+        value: {
+          getUserMedia: () => new Promise((resolve) => {
+            camera.resolve = resolve;
+          }),
+        },
+      });
+    });
+    await page.goto("/");
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("button", { name: "Start camera" }).click();
+    await expect(page.getByText("Requesting camera permission…")).toBeVisible();
+    await page.getByRole("button", { name: "Stop camera" }).click();
+    await expect(page.getByText("Start the camera to scan")).toBeVisible();
+
+    await page.evaluate(() => {
+      const camera = (window as typeof window & {
+        __cameraTest: { resolve: (stream: unknown) => void; stopCount: number };
+      }).__cameraTest;
+      camera.resolve({
+        getTracks: () => [{ stop: () => { camera.stopCount += 1; } }],
+      });
+    });
+
+    await expect.poll(() => page.evaluate(() =>
+      (window as typeof window & { __cameraTest: { stopCount: number } })
+        .__cameraTest.stopCount,
+    )).toBe(1);
+    await expect(page.getByText("Start the camera to scan")).toBeVisible();
+  });
+
+  test("stops a late camera stream when navigating away from the scanner", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const camera = { resolve: null as null | ((stream: unknown) => void), stopCount: 0 };
+      Object.defineProperty(window, "__cameraTest", {
+        configurable: false,
+        value: camera,
+      });
+      Object.defineProperty(navigator, "mediaDevices", {
+        configurable: true,
+        value: {
+          getUserMedia: () => new Promise((resolve) => {
+            camera.resolve = resolve;
+          }),
+        },
+      });
+    });
+    await page.goto("/");
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("button", { name: "Start camera" }).click();
+    await expect(page.getByText("Requesting camera permission…")).toBeVisible();
+    await page.getByRole("tab", { name: "Create QR" }).click();
+    await expect(page.getByLabel("Website address")).toBeVisible();
+
+    await page.evaluate(() => {
+      const camera = (window as typeof window & {
+        __cameraTest: { resolve: (stream: unknown) => void; stopCount: number };
+      }).__cameraTest;
+      camera.resolve({
+        getTracks: () => [{ stop: () => { camera.stopCount += 1; } }],
+      });
+    });
+
+    await expect.poll(() => page.evaluate(() =>
+      (window as typeof window & { __cameraTest: { stopCount: number } })
+        .__cameraTest.stopCount,
+    )).toBe(1);
+    await expect(page.getByLabel("Website address")).toBeVisible();
+  });
+
   test("decodes an uploaded QR image and offers explicit safe link actions", async ({
     page,
   }) => {
