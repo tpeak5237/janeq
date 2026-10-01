@@ -272,25 +272,44 @@ test.describe("JaneQ generator", () => {
       "href",
       "https://example.com/janeq-test",
     );
+    await expect(page.getByRole("link", { name: "Open link" })).toHaveAttribute(
+      "target",
+      "_blank",
+    );
+    await expect(page).toHaveURL("http://127.0.0.1:3000/");
     await expect(page.getByText("https://example.com/janeq-test")).toBeVisible();
   });
 
-  test("does not offer an Open link action for javascript payloads", async ({
+  test("keeps active URL schemes inert and does not navigate automatically", async ({
     page,
   }) => {
     await page.goto("/");
     await page.getByRole("tab", { name: "Scan QR" }).click();
     await page.getByRole("tab", { name: "Upload image" }).click();
-    await page.locator('input[type="file"]').setInputFiles(
-      await qrImageFile("javascript:alert(1)"),
-    );
+    let popupCount = 0;
+    page.on("popup", () => {
+      popupCount += 1;
+    });
 
-    await expect(
-      page.getByRole("region", { name: "QR scanner" }).getByText("QR detected").last(),
-    ).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText("javascript:alert(1)")).toBeVisible();
-    await expect(page.getByText("This is not a web link")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Open link" })).toHaveCount(0);
+    for (const payload of [
+      "javascript:alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "file:///etc/passwd",
+      "vbscript:msgbox(1)",
+      "blob:https://example.com/1234",
+    ]) {
+      await page.locator('input[type="file"]').setInputFiles(await qrImageFile(payload));
+      await expect(page.locator(".scanner-result-value")).toHaveText(payload, {
+        timeout: 15_000,
+      });
+      await expect(page.getByText("This is not a web link")).toBeVisible();
+      await expect(page.getByRole("link", { name: "Open link" })).toHaveCount(0);
+      await expect(page).toHaveURL("http://127.0.0.1:3000/");
+      await expect.poll(() => popupCount).toBe(0);
+      if (payload !== "blob:https://example.com/1234") {
+        await page.getByRole("button", { name: "Scan another QR" }).click();
+      }
+    }
   });
 
   test("shows a clear no-result state for an image without a QR code", async ({
