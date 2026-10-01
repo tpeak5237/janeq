@@ -556,4 +556,61 @@ test.describe("JaneQ generator", () => {
     await page.getByRole("button", { name: "เปลี่ยนเป็นโหมดมืด" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   });
+
+  test("keeps the current synthetic scan visible when local storage is denied", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        get() {
+          throw new DOMException("Storage access is denied", "SecurityError");
+        },
+      });
+    });
+    await page.goto("/");
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("tab", { name: "Upload image" }).click();
+    await page.locator('input[type="file"]').setInputFiles(
+      await qrImageFile("https://example.com/storage-denied-scan"),
+    );
+
+    await expect(page.locator(".scanner-result-value")).toHaveText(
+      "https://example.com/storage-denied-scan",
+      { timeout: 15_000 },
+    );
+    await page.getByRole("button", { name: "Scan another" }).click();
+    await expect(page.locator(".scanner-result-value")).toHaveCount(0);
+  });
+
+  test("keeps the current synthetic scan visible when local storage is full", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        value: {
+          getItem: () => null,
+          setItem: () => {
+            throw new DOMException("Storage quota is exhausted", "QuotaExceededError");
+          },
+        },
+      });
+    });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Switch to dark mode" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("tab", { name: "Upload image" }).click();
+    await page.locator('input[type="file"]').setInputFiles(
+      await qrImageFile("https://example.com/storage-quota-scan"),
+    );
+
+    await expect(page.locator(".scanner-result-value")).toHaveText(
+      "https://example.com/storage-quota-scan",
+      { timeout: 15_000 },
+    );
+    await page.getByRole("button", { name: "Scan another" }).click();
+    await expect(page.locator(".scanner-result-value")).toHaveCount(0);
+  });
 });
