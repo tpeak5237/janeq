@@ -104,6 +104,37 @@ async function hasRevokedImageObjectUrl(
   url);
 }
 
+async function delayFirstLogoDecode(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      HTMLImageElement.prototype,
+      "src",
+    );
+    if (!descriptor?.get || !descriptor.set) return;
+
+    const state: {
+      started: boolean;
+      release: (() => void) | null;
+    } = { started: false, release: null };
+    Object.defineProperty(window, "__delayedLogoDecode", { value: state });
+    let delayed = false;
+    Object.defineProperty(HTMLImageElement.prototype, "src", {
+      configurable: true,
+      enumerable: descriptor.enumerable,
+      get: descriptor.get,
+      set(value: string) {
+        if (!delayed && value.startsWith("data:image/svg+xml")) {
+          delayed = true;
+          state.started = true;
+          state.release = () => descriptor.set?.call(this, value);
+          return;
+        }
+        descriptor.set?.call(this, value);
+      },
+    });
+  });
+}
+
 test.describe("JaneQ generator", () => {
   test("opens directly into the generator and exposes export actions", async ({
     page,
@@ -120,6 +151,45 @@ test.describe("JaneQ generator", () => {
     await expect(await revealPayload(page)).toHaveText(
       "https://example.com/classes?room=4",
     );
+    await expect(page.getByRole("button", { name: /^PNG$/ })).toBeEnabled();
+    await expect(page.getByRole("button", { name: /^SVG$/ })).toBeEnabled();
+  });
+
+  test("ignores a cancelled QR render when an older logo decode finishes late", async ({
+    page,
+  }) => {
+    await delayFirstLogoDecode(page);
+    await page.goto("/");
+    await page.getByLabel("Website address").fill("https://example.com/first");
+    await page.locator(".control-disclosure").filter({ hasText: "Logo" }).locator("summary").click();
+    await page.getByRole("button", { name: "theerapat.org mark" }).click();
+
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          (window as typeof window & {
+            __delayedLogoDecode: { started: boolean };
+          }).__delayedLogoDecode.started,
+        ),
+      )
+      .toBe(true);
+
+    const website = page.getByLabel("Website address");
+    await website.fill("https://example.com/latest");
+    await expect(await revealPayload(page)).toHaveText(
+      "https://example.com/latest",
+    );
+    const preview = page.getByTestId("qr-preview").locator("img");
+    await expect(preview).toBeVisible();
+    const latestPreview = await preview.getAttribute("src");
+
+    await page.evaluate(() => {
+      (window as typeof window & {
+        __delayedLogoDecode: { release: (() => void) | null };
+      }).__delayedLogoDecode.release?.();
+    });
+
+    await expect(preview).toHaveAttribute("src", latestPreview!);
     await expect(page.getByRole("button", { name: /^PNG$/ })).toBeEnabled();
     await expect(page.getByRole("button", { name: /^SVG$/ })).toBeEnabled();
   });
