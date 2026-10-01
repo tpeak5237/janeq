@@ -212,4 +212,24 @@ test.describe("JaneQ generator", () => {
     await page.getByRole("button", { name: "เปลี่ยนเป็นภาษาอังกฤษ" }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
   });
+
+  test("keeps language and theme controls usable when browser storage is blocked", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        get() {
+          throw new DOMException("Storage access is denied", "SecurityError");
+        },
+      });
+    });
+    await page.goto("/");
+
+    await expect(page).toHaveTitle(/JaneQ/);
+    await page.getByRole("button", { name: "Switch to Thai" }).click();
+    await expect(page.locator("html")).toHaveAttribute("lang", "th");
+    await page.getByRole("button", { name: "เปลี่ยนเป็นโหมดมืด" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  });
 });

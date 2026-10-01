@@ -8,10 +8,12 @@ import type {
   QrType,
   ReliabilityMessage,
 } from "@/lib/qr";
+import { readBrowserStorage, writeBrowserStorage } from "@/lib/browser-storage";
 
 export type Locale = "en" | "th";
 
 const LOCALE_EVENT = "janeq-locale-change";
+let localeFallback: Locale | null = null;
 
 const en = {
     siteSubtitle: "Just Another Non-Existent QR Code",
@@ -491,9 +493,11 @@ export function translate(
   return value;
 }
 
-function getLocale(): Locale {
+export function getLocaleSnapshot(): Locale {
   if (typeof window === "undefined") return "en";
-  return window.localStorage.getItem("janeq-locale") === "th" ? "th" : "en";
+  const preference = readBrowserStorage("janeq-locale");
+  if (!preference.available) return localeFallback ?? "en";
+  return preference.value === "th" ? "th" : "en";
 }
 
 function subscribeLocale(callback: () => void) {
@@ -506,11 +510,12 @@ function subscribeLocale(callback: () => void) {
 }
 
 export function useLocale(): Locale {
-  return useSyncExternalStore(subscribeLocale, getLocale, () => "en");
+  return useSyncExternalStore(subscribeLocale, getLocaleSnapshot, () => "en");
 }
 
 export function setLocale(locale: Locale): void {
-  window.localStorage.setItem("janeq-locale", locale);
+  writeBrowserStorage("janeq-locale", locale);
+  localeFallback = locale;
   document.documentElement.lang = locale === "th" ? "th" : "en";
   window.dispatchEvent(new Event(LOCALE_EVENT));
 }

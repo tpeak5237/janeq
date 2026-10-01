@@ -3,16 +3,22 @@
 import { useEffect, useSyncExternalStore } from "react";
 
 import { Icon } from "@/components/icons";
+import { readBrowserStorage, writeBrowserStorage } from "@/lib/browser-storage";
 import { useCopy } from "@/lib/i18n";
 
 type Theme = "light" | "dark";
 
 const THEME_EVENT = "janeq-theme-change";
+let themeFallback: Theme | null = null;
 
-function getTheme(): Theme {
+export function getThemeSnapshot(): Theme {
   if (typeof window === "undefined") return "light";
-  const storedTheme = window.localStorage.getItem("janeq-theme") as Theme | null;
-  return storedTheme ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const preference = readBrowserStorage("janeq-theme");
+  if (!preference.available) {
+    return themeFallback ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  }
+  if (preference.value === "light" || preference.value === "dark") return preference.value;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 function subscribe(callback: () => void) {
@@ -25,7 +31,7 @@ function subscribe(callback: () => void) {
 }
 
 export function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribe, getTheme, () => "light");
+  const theme = useSyncExternalStore(subscribe, getThemeSnapshot, () => "light");
   const { t } = useCopy();
 
   useEffect(() => {
@@ -34,9 +40,7 @@ export function ThemeToggle() {
 
   function toggleTheme() {
     const nextTheme = theme === "light" ? "dark" : "light";
-    window.localStorage.setItem("janeq-theme", nextTheme);
-    document.documentElement.dataset.theme = nextTheme;
-    window.dispatchEvent(new Event(THEME_EVENT));
+    setThemePreference(nextTheme);
   }
 
   return (
@@ -49,4 +53,11 @@ export function ThemeToggle() {
       <Icon name={theme === "light" ? "moon" : "sun"} />
     </button>
   );
+}
+
+export function setThemePreference(theme: Theme): void {
+  writeBrowserStorage("janeq-theme", theme);
+  themeFallback = theme;
+  document.documentElement.dataset.theme = theme;
+  window.dispatchEvent(new Event(THEME_EVENT));
 }
