@@ -28,6 +28,56 @@ async function revealPayload(page: import("@playwright/test").Page) {
   return payload;
 }
 
+async function trackImageObjectUrls(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    const state = { created: [] as string[], revoked: [] as string[] };
+    const createObjectUrl = URL.createObjectURL.bind(URL);
+    const revokeObjectUrl = URL.revokeObjectURL.bind(URL);
+    Object.defineProperty(window, "__imageObjectUrls", { value: state });
+    URL.createObjectURL = (blob) => {
+      const url = createObjectUrl(blob);
+      state.created.push(url);
+      return url;
+    };
+    URL.revokeObjectURL = (url) => {
+      state.revoked.push(url);
+      revokeObjectUrl(url);
+    };
+  });
+}
+
+async function delayNativeQrDetection(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    const state: {
+      started: boolean;
+      resolve: (() => void) | null;
+    } = { started: false, resolve: null };
+    Object.defineProperty(window, "__controlledQrDetection", { value: state });
+    class ControlledBarcodeDetector {
+      static async getSupportedFormats() {
+        return ["qr_code"];
+      }
+
+      async detect() {
+        state.started = true;
+        return new Promise<Array<{
+          rawValue: string;
+          cornerPoints: Array<{ x: number; y: number }>;
+        }>>((resolve) => {
+          state.resolve = () => resolve([{
+            rawValue: "https://example.com/late-image-result",
+            cornerPoints: [],
+          }]);
+        });
+      }
+    }
+    Object.defineProperty(window, "BarcodeDetector", {
+      configurable: true,
+      value: ControlledBarcodeDetector,
+    });
+  });
+}
+
 test.describe("JaneQ generator", () => {
   test("opens directly into the generator and exposes export actions", async ({
     page,
@@ -323,6 +373,111 @@ test.describe("JaneQ generator", () => {
     await expect(page.getByText("No QR code found in this image.")).toBeVisible({
       timeout: 15_000,
     });
+  });
+
+  test("rejects invalid and oversized images without creating previews", async ({
+    page,
+  }) => {
+    await trackImageObjectUrls(page);
+    await page.goto("/");
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("tab", { name: "Upload image" }).click();
+    const fileInput = page.locator('input[type="file"]');
+
+    await fileInput.setInputFiles({
+      name: "not-an-image.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("synthetic invalid image fixture"),
+    });
+    await expect(page.getByText("The scanner could not start. Try another camera or image."))
+      .toBeVisible();
+    await expect(fileInput).toHaveValue("");
+
+    await fileInput.setInputFiles({
+      name: "oversized.png",
+      mimeType: "image/png",
+      buffer: Buffer.alloc(20 * 1024 * 1024 + 1),
+    });
+    await expect(page.getByText("The scanner could not start. Try another camera or image."))
+      .toBeVisible();
+    await expect(fileInput).toHaveValue("");
+    await expect.poll(() => page.evaluate(() =>
+      (window as typeof window & {
+        __imageObjectUrls: { created: string[]; revoked: string[] };
+      }).__imageObjectUrls.created.length,
+    )).toBe(0);
+  });
+
+  test("reselects the same image and revokes each preview when replaced or navigated away", async ({
+    page,
+  }) => {
+    await trackImageObjectUrls(page);
+    await page.goto("/");
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("tab", { name: "Upload image" }).click();
+    const fileInput = page.locator('input[type="file"]');
+    const file = await qrImageFile("https://example.com/repeated-selection");
+
+    for (const expectedCreated of [1, 2]) {
+      await fileInput.setInputFiles(file);
+      await expect(page.locator(".scanner-result-value")).toHaveText(
+        "https://example.com/repeated-selection",
+        { timeout: 15_000 },
+      );
+      await expect.poll(() => page.evaluate(() =>
+        (window as typeof window & {
+          __imageObjectUrls: { created: string[]; revoked: string[] };
+        }).__imageObjectUrls.created.length,
+      )).toBe(expectedCreated);
+      await expect.poll(() => page.evaluate(() =>
+        (window as typeof window & {
+          __imageObjectUrls: { created: string[]; revoked: string[] };
+        }).__imageObjectUrls.revoked.length,
+      )).toBe(expectedCreated - 1);
+    }
+
+    await page.getByRole("tab", { name: "Create QR" }).click();
+    await expect(page.getByLabel("Website address")).toBeVisible();
+    await expect.poll(() => page.evaluate(() =>
+      (window as typeof window & {
+        __imageObjectUrls: { created: string[]; revoked: string[] };
+      }).__imageObjectUrls.revoked.length,
+    )).toBe(2);
+  });
+
+  test("cancels an in-flight image decode when switching back to camera", async ({
+    page,
+  }) => {
+    await trackImageObjectUrls(page);
+    await delayNativeQrDetection(page);
+    await page.goto("/");
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("tab", { name: "Upload image" }).click();
+    await page.locator('input[type="file"]').setInputFiles(
+      await qrImageFile("https://example.com/image-that-will-be-cancelled"),
+    );
+    await page.waitForFunction(() =>
+      (window as typeof window & {
+        __controlledQrDetection: { started: boolean };
+      }).__controlledQrDetection.started,
+    );
+
+    await page.getByRole("tab", { name: "Camera" }).click();
+    await expect(page.getByText("Start the camera to scan")).toBeVisible();
+    await expect.poll(() => page.evaluate(() =>
+      (window as typeof window & {
+        __imageObjectUrls: { created: string[]; revoked: string[] };
+      }).__imageObjectUrls.revoked.length,
+    )).toBe(1);
+
+    await page.evaluate(() => {
+      const state = (window as typeof window & {
+        __controlledQrDetection: { resolve: (() => void) | null };
+      }).__controlledQrDetection;
+      state.resolve?.();
+    });
+    await expect(page.getByText("Start the camera to scan")).toBeVisible();
+    await expect(page.locator(".scanner-result-value")).toHaveCount(0);
   });
 
   test("stacks the workspace on a narrow screen", async ({ page }) => {
