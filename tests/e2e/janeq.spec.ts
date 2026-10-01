@@ -163,7 +163,9 @@ test.describe("JaneQ generator", () => {
     await page.goto("/");
     await page
       .locator(".control-disclosure")
-      .filter({ has: page.getByRole("button", { name: "theerapat.org mark" }) })
+      .filter({
+        has: page.locator("button").filter({ hasText: "theerapat.org mark" }),
+      })
       .locator("summary")
       .click();
     await page.getByRole("button", { name: "theerapat.org mark" }).click();
