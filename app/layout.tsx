@@ -1,18 +1,11 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Thai } from "next/font/google";
 
 import { LanguageProvider } from "@/lib/i18n";
 
 import "./globals.css";
+import "./fonts.css";
 
 const siteUrl = "https://janeq.theerapat.org";
-
-const notoSansThai = Noto_Sans_Thai({
-  display: "swap",
-  subsets: ["thai", "latin"],
-  variable: "--font-noto-sans-thai",
-  weight: ["400", "600", "700"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -50,7 +43,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html className={notoSansThai.variable} lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: bootScript }} />
         <LanguageProvider>{children}</LanguageProvider>
