@@ -91,6 +91,7 @@ async function revealPayload(page: import("@playwright/test").Page) {
 }
 
 async function expectNoWcagViolations(page: import("@playwright/test").Page) {
+  await page.waitForTimeout(250);
   const violations = await page.evaluate(async () => {
     type Axe = {
       run: (
@@ -493,10 +494,8 @@ test.describe("JaneQ generator", () => {
     });
     await expectNoWcagViolations(page);
     await page.getByRole("button", { name: "Switch to dark mode" }).click();
-    await page.waitForTimeout(250);
     await expectNoWcagViolations(page);
     await page.getByRole("button", { name: "Switch to light mode" }).click();
-    await page.waitForTimeout(250);
     await page.getByRole("button", { name: /PromptPay/ }).click();
     await page.getByLabel("PromptPay ID").fill("081-234-5678");
     await expectNoWcagViolations(page);
