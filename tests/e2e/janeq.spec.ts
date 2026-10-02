@@ -89,6 +89,36 @@ async function revealPayload(page: import("@playwright/test").Page) {
   return payload;
 }
 
+async function expectNoWcagViolations(page: import("@playwright/test").Page) {
+  const violations = await page.evaluate(async () => {
+    type Axe = {
+      run: (
+        context: Document,
+        options: unknown,
+      ) => Promise<{
+        violations: Array<{
+          id: string;
+          impact: string | null;
+          nodes: Array<{ target: string[] }>;
+        }>;
+      }>;
+    };
+    const axe = (window as typeof window & { axe: Axe }).axe;
+    const results = await axe.run(document, {
+      runOnly: {
+        type: "tag",
+        values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"],
+      },
+    });
+    return results.violations.map((violation) => ({
+      id: violation.id,
+      impact: violation.impact,
+      targets: violation.nodes.map((node) => node.target),
+    }));
+  });
+  expect(violations).toEqual([]);
+}
+
 async function trackImageObjectUrls(page: import("@playwright/test").Page) {
   await page.addInitScript(() => {
     const state = { created: [] as string[], revoked: [] as string[] };
@@ -214,6 +244,15 @@ test.describe("JaneQ generator", () => {
     );
     await expect(page.getByRole("button", { name: /^PNG$/ })).toBeEnabled();
     await expect(page.getByRole("button", { name: /^SVG$/ })).toBeEnabled();
+    const pngButton = page.getByRole("button", { name: /^PNG$/ });
+    await pngButton.focus();
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      pngButton.press("Enter"),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/\.png$/);
+    await expect(pngButton).toBeFocused();
+    await expect(page.getByText("PNG downloaded.")).toBeVisible();
   });
 
   test("ignores a cancelled QR render when an older logo decode finishes late", async ({
@@ -410,15 +449,33 @@ test.describe("JaneQ generator", () => {
     page,
   }) => {
     await page.goto("/");
-    await page.getByRole("tab", { name: "Scan QR" }).click();
+    const createTab = page.getByRole("tab", { name: "Create QR" });
+    await createTab.focus();
+    await createTab.press("ArrowRight");
+    const scanTab = page.getByRole("tab", { name: "Scan QR" });
+    await expect(scanTab).toHaveAttribute("aria-selected", "true");
+    await expect(scanTab).toBeFocused();
     await expect(page.locator("#utility-heading")).toHaveText("Scan QR");
     await expect(page.getByText("Start the camera to scan")).toBeVisible();
 
-    await page.getByRole("tab", { name: "Create QR" }).click();
+    const cameraTab = page.getByRole("tab", { name: "Camera" });
+    await cameraTab.focus();
+    await cameraTab.press("ArrowRight");
+    const uploadTab = page.getByRole("tab", { name: "Upload image" });
+    await expect(uploadTab).toHaveAttribute("aria-selected", "true");
+    await expect(uploadTab).toBeFocused();
+    await uploadTab.press("ArrowLeft");
+    await expect(cameraTab).toHaveAttribute("aria-selected", "true");
+    await expect(cameraTab).toBeFocused();
+
+    await scanTab.focus();
+    await scanTab.press("ArrowLeft");
+    await expect(createTab).toHaveAttribute("aria-selected", "true");
+    await expect(createTab).toBeFocused();
     await expect(page.getByLabel("Website address")).toBeVisible();
   });
 
-  test("shows the permission-denied state without crashing", async ({ page }) => {
+  test("announces camera permission failure and keeps keyboard focus", async ({ page }) => {
     await page.addInitScript(() => {
       Object.defineProperty(navigator, "mediaDevices", {
         configurable: true,
@@ -430,11 +487,35 @@ test.describe("JaneQ generator", () => {
       });
     });
     await page.goto("/");
+    await page.addScriptTag({
+      content: await readFile(new URL("../../node_modules/axe-core/axe.min.js", import.meta.url), "utf8"),
+    });
+    await expectNoWcagViolations(page);
     await page.getByRole("tab", { name: "Scan QR" }).click();
-    await page.getByRole("button", { name: "Start camera" }).click();
-    await expect(
-      page.getByText(/Camera permission was denied/),
-    ).toBeVisible();
+    await expectNoWcagViolations(page);
+    const startCamera = page.getByRole("button", { name: "Start camera" });
+    await startCamera.focus();
+    await startCamera.press("Enter");
+    const status = page.locator(".scanner-status");
+    await expect(status).toContainText("Camera permission was denied");
+    await expect(status).toHaveAttribute("aria-live", "polite");
+    await expect(page.getByRole("button", { name: "Start camera" })).toBeFocused();
+    await expectNoWcagViolations(page);
+
+    await page.getByRole("tab", { name: "Upload image" }).click();
+    const fileInput = page.locator('input[type="file"]');
+    await fileInput.setInputFiles(await qrImageFile("https://example.com/a11y-result"));
+    await expect(page.locator(".scanner-result-value")).toHaveText(
+      "https://example.com/a11y-result",
+      { timeout: 15_000 },
+    );
+    await expectNoWcagViolations(page);
+
+    const scanAnother = page.getByRole("button", { name: "Scan another" });
+    await scanAnother.focus();
+    await scanAnother.press("Enter");
+    await expect(fileInput).toBeFocused();
+    await expectNoWcagViolations(page);
   });
 
   test("shows the unavailable-camera state when the browser has no camera API", async ({
@@ -500,6 +581,7 @@ test.describe("JaneQ generator", () => {
     await expect(page.getByText("Requesting camera permission…")).toBeVisible();
     await page.getByRole("button", { name: "Stop camera" }).click();
     await expect(page.getByText("Start the camera to scan")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Start camera" })).toBeFocused();
 
     await page.evaluate(() => {
       const camera = (window as typeof window & {
@@ -582,6 +664,10 @@ test.describe("JaneQ generator", () => {
     );
     await expect(page).toHaveURL("http://127.0.0.1:3000/");
     await expect(page.getByText("https://example.com/janeq-test")).toBeVisible();
+    const scanAnother = page.getByRole("button", { name: "Scan another" });
+    await scanAnother.focus();
+    await scanAnother.press("Enter");
+    await expect(page.locator('input[type="file"]')).toBeFocused();
   });
 
   test("keeps active URL schemes inert and does not navigate automatically", async ({
