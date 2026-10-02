@@ -10,6 +10,70 @@ async function qrImageFile(value: string) {
   };
 }
 
+function pngWithTextChunk(png: Buffer, metadata: string) {
+  const type = Buffer.from("tEXt");
+  const data = Buffer.concat([Buffer.from("Comment\0"), Buffer.from(metadata)]);
+  const crcInput = Buffer.concat([type, data]);
+  let crc = 0xffffffff;
+  for (const byte of crcInput) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc & 1) === 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1;
+    }
+  }
+  crc = (crc ^ 0xffffffff) >>> 0;
+
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length);
+  const checksum = Buffer.alloc(4);
+  checksum.writeUInt32BE(crc);
+  const chunk = Buffer.concat([length, type, data, checksum]);
+  const iendStart = png.length - 12;
+  return Buffer.concat([png.subarray(0, iendStart), chunk, png.subarray(iendStart)]);
+}
+
+async function qrLogoFileWithMetadata(metadata: string) {
+  const png = await QRCode.toBuffer("synthetic logo fixture", {
+    type: "png",
+    margin: 4,
+    width: 320,
+  });
+  return {
+    name: "synthetic-logo.png",
+    mimeType: "image/png",
+    buffer: pngWithTextChunk(png, metadata),
+  };
+}
+
+async function rasterizeSvg(page: import("@playwright/test").Page, svg: string) {
+  const bytes = await page.evaluate(async (source) => {
+    const objectUrl = URL.createObjectURL(
+      new Blob([source], { type: "image/svg+xml;charset=utf-8" }),
+    );
+    try {
+      const image = new Image();
+      image.src = objectUrl;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Canvas rendering is unavailable.");
+      context.drawImage(image, 0, 0);
+      const png = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) =>
+          blob ? resolve(blob) : reject(new Error("PNG export failed.")),
+          "image/png",
+        );
+      });
+      return Array.from(new Uint8Array(await png.arrayBuffer()));
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }, svg);
+  return Buffer.from(bytes);
+}
+
 function blankImageFile() {
   return {
     name: "blank.png",
@@ -209,6 +273,87 @@ test.describe("JaneQ generator", () => {
     await expect(await readFile(downloadPath!, "utf8")).toBe(
       decodeURIComponent(latestPreview!.split(",")[1]),
     );
+  });
+
+  test("exports inert, decodable QR files from hostile text and logo metadata", async ({
+    page,
+  }) => {
+    const hostileText = '</svg><script>alert("synthetic")</script>& + %2F';
+    const hostileMetadata = 'marker <script onload="alert(1)"> & closing tag </svg>';
+    await page.goto("/");
+    await page
+      .getByRole("group", { name: "QR code type" })
+      .getByRole("button", { name: "Text" })
+      .click();
+    await page.getByLabel("Text").fill(hostileText);
+    await page
+      .locator(".control-disclosure")
+      .filter({
+        has: page.locator('input[accept="image/png,image/jpeg,image/webp"]'),
+      })
+      .locator("summary")
+      .click();
+    await page
+      .locator('input[accept="image/png,image/jpeg,image/webp"]')
+      .setInputFiles(await qrLogoFileWithMetadata(hostileMetadata));
+    await expect(page.getByText("synthetic-logo.png")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^SVG$/ })).toBeEnabled();
+
+    const preview = page.getByTestId("qr-preview").locator("img");
+    await expect(preview).toBeVisible();
+    const previewUrl = await preview.getAttribute("src");
+    expect(previewUrl).toMatch(/^data:image\/svg\+xml;charset=utf-8,/);
+    const previewSvg = decodeURIComponent(previewUrl!.split(",")[1]);
+    const embeddedLogo = previewSvg.match(
+      /<image href="data:image\/png;base64,([^"]+)"/,
+    )?.[1];
+    expect(embeddedLogo).toBeTruthy();
+    expect(Buffer.from(embeddedLogo!, "base64").includes(Buffer.from(hostileMetadata)))
+      .toBe(false);
+    expect(previewSvg).not.toContain(hostileText);
+    expect(previewSvg).not.toContain(hostileMetadata);
+    expect(previewSvg).not.toContain("<script");
+    expect(previewSvg).not.toContain("onload=");
+
+    const [svgDownload] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: /^SVG$/ }).click(),
+    ]);
+    const svgPath = await svgDownload.path();
+    expect(svgPath).toBeTruthy();
+    const downloadedSvg = await readFile(svgPath!, "utf8");
+    expect(downloadedSvg).toBe(previewSvg);
+
+    const [pngDownload] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: /^PNG$/ }).click(),
+    ]);
+    const pngPath = await pngDownload.path();
+    expect(pngPath).toBeTruthy();
+    const downloadedPng = await readFile(pngPath!);
+    const rasterizedSvg = await rasterizeSvg(page, downloadedSvg);
+
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("tab", { name: "Upload image" }).click();
+    const scanInput = page.locator('input[type="file"]');
+    await scanInput.setInputFiles({
+      name: "generated.png",
+      mimeType: "image/png",
+      buffer: downloadedPng,
+    });
+    await expect(page.locator(".scanner-result-value")).toHaveText(hostileText, {
+      timeout: 15_000,
+    });
+
+    await page.getByRole("button", { name: "Scan another" }).click();
+    await scanInput.setInputFiles({
+      name: "generated-from-svg.png",
+      mimeType: "image/png",
+      buffer: rasterizedSvg,
+    });
+    await expect(page.locator(".scanner-result-value")).toHaveText(hostileText, {
+      timeout: 15_000,
+    });
   });
 
   test("builds a Wi-Fi code and keeps the privacy boundary visible", async ({
