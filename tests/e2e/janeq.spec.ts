@@ -32,12 +32,8 @@ function pngWithTextChunk(png: Buffer, metadata: string) {
   return Buffer.concat([png.subarray(0, iendStart), chunk, png.subarray(iendStart)]);
 }
 
-async function qrLogoFileWithMetadata(metadata: string) {
-  const png = await QRCode.toBuffer("synthetic logo fixture", {
-    type: "png",
-    margin: 4,
-    width: 320,
-  });
+function qrLogoFileWithMetadata(metadata: string) {
+  const png = blankImageFile().buffer;
   return {
     name: "synthetic-logo.png",
     mimeType: "image/png",
