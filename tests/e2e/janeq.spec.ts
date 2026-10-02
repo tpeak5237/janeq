@@ -100,7 +100,11 @@ async function expectNoWcagViolations(page: import("@playwright/test").Page) {
         violations: Array<{
           id: string;
           impact: string | null;
-          nodes: Array<{ target: string[] }>;
+          nodes: Array<{
+            target: string[];
+            failureSummary?: string | null;
+            any: Array<{ data: Record<string, unknown> }>;
+          }>;
         }>;
       }>;
     };
@@ -114,7 +118,11 @@ async function expectNoWcagViolations(page: import("@playwright/test").Page) {
     return results.violations.map((violation) => ({
       id: violation.id,
       impact: violation.impact,
-      targets: violation.nodes.map((node) => node.target),
+      nodes: violation.nodes.map((node) => ({
+        target: node.target,
+        failureSummary: node.failureSummary,
+        details: node.any.map((check) => check.data),
+      })),
     }));
   });
   expect(violations).toEqual([]);
