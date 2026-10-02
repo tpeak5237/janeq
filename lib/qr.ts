@@ -166,6 +166,7 @@ const PHONE_PATTERN = /^\+?[0-9]{5,15}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PROMPTPAY_ID_PATTERN = /^(?:0[689][0-9]{8}|[0-9]{13}|[0-9]{15})$/;
 const PROMPTPAY_AMOUNT_PATTERN = /^(?:0|[1-9][0-9]*)(?:\.[0-9]{1,2})?$/;
+const PROMPTPAY_AMOUNT_MAX_LENGTH = 13;
 
 function clean(value: string): string {
   return value.trim();
@@ -195,6 +196,7 @@ export function normalizePromptPayAmount(value: string): string | null {
 
   const [whole, fraction = ""] = amount.split(".");
   const normalized = `${whole}.${fraction.padEnd(2, "0")}`;
+  if (normalized.length > PROMPTPAY_AMOUNT_MAX_LENGTH) return null;
   const numericAmount = Number(normalized);
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) return null;
   return normalized;
