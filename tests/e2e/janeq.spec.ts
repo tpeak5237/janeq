@@ -91,6 +91,11 @@ async function revealPayload(page: import("@playwright/test").Page) {
 }
 
 async function expectNoWcagViolations(page: import("@playwright/test").Page) {
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((animation) =>
+      animation.finished.catch(() => undefined),
+    )),
+  );
   const violations = await page.evaluate(async () => {
     type Axe = {
       run: (
