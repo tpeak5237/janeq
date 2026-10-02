@@ -492,6 +492,12 @@ test.describe("JaneQ generator", () => {
       path: resolve(process.cwd(), "node_modules/axe-core/axe.min.js"),
     });
     await expectNoWcagViolations(page);
+    await page.getByRole("button", { name: "Switch to dark mode" }).click();
+    await expectNoWcagViolations(page);
+    await page.getByRole("button", { name: "Switch to light mode" }).click();
+    await page.getByRole("button", { name: /PromptPay/ }).click();
+    await page.getByLabel("PromptPay ID").fill("081-234-5678");
+    await expectNoWcagViolations(page);
     await page.getByRole("tab", { name: "Scan QR" }).click();
     await expectNoWcagViolations(page);
     const startCamera = page.getByRole("button", { name: "Start camera" });
