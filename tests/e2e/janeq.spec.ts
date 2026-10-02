@@ -840,6 +840,53 @@ test.describe("JaneQ generator", () => {
     await expect(page.locator("body")).toHaveCSS("overflow-x", "visible");
   });
 
+  test("keeps scan feedback usable at a 200%-zoom-equivalent width", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 160, height: 800 });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "mediaDevices", {
+        configurable: true,
+        value: {
+          getUserMedia: () =>
+            Promise.reject(new DOMException("Permission denied", "NotAllowedError")),
+        },
+      });
+    });
+    await page.goto("/");
+
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(160);
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("button", { name: "Start camera" }).click();
+    const cameraStatus = page.locator(".scanner-status");
+    await expect(cameraStatus).toContainText(
+      "Camera permission was denied. Allow access and try again.",
+    );
+    await expect(cameraStatus).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.querySelector(".scanner-status")?.getBoundingClientRect().right,
+      ),
+    ).toBeLessThanOrEqual(160);
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(160);
+
+    await page.getByRole("tab", { name: "Upload image" }).click();
+    await page.locator('input[type="file"]').setInputFiles(
+      await qrImageFile("https://synthetic.example/zoom-reflow"),
+    );
+    await expect(page.locator(".scanner-result-value")).toHaveText(
+      "https://synthetic.example/zoom-reflow",
+    );
+    await expect(page.getByRole("button", { name: "Scan another" })).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(160);
+  });
+
   test("switches the interface to Thai and keeps generation working", async ({
     page,
   }) => {
