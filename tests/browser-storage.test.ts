@@ -88,4 +88,26 @@ describe("browser preference storage", () => {
       expect((document as Document).documentElement.dataset.theme).toBe("dark");
     },
   );
+
+  it.each([null, "en"] as const)(
+    "keeps the current locale when reads return %s but quota prevents writes",
+    (storedPreference) => {
+      const browserWindow = {
+        dispatchEvent: vi.fn(),
+        localStorage: {
+          getItem: vi.fn(() => storedPreference),
+          setItem() {
+            throw new DOMException("Storage quota is exhausted", "QuotaExceededError");
+          },
+        },
+      };
+      vi.stubGlobal("window", browserWindow);
+      vi.stubGlobal("document", { documentElement: { dataset: {}, lang: "en" } });
+
+      setLocale("th");
+
+      expect(getLocaleSnapshot()).toBe("th");
+      expect((document as Document).documentElement.lang).toBe("th");
+    },
+  );
 });
