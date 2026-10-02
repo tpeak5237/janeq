@@ -77,7 +77,6 @@ body {
   color: rgb(var(--color-ink));
   font-family: var(--font-body);
   margin: 0;
-  min-width: 320px;
   text-rendering: optimizeLegibility;
   transition: background-color 180ms ease, color 180ms ease;
 }
@@ -2065,5 +2064,37 @@ html[lang="th"] .field-textarea {
 
   .brand-subtitle {
     display: none;
+  }
+}
+
+@media (max-width: 319px) {
+  .site-header-inner {
+    flex-wrap: wrap;
+    padding-block: 8px;
+    row-gap: 8px;
+  }
+
+  .site-nav {
+    gap: 6px;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .scanner-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .segmented-button {
+    padding-inline: 4px;
+    white-space: normal;
+  }
+
+  .scanner-shell {
+    padding: 12px;
   }
 }
