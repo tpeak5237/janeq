@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import QRCode from "qrcode";
 
 async function qrImageFile(value: string) {
@@ -488,7 +489,7 @@ test.describe("JaneQ generator", () => {
     });
     await page.goto("/");
     await page.addScriptTag({
-      content: await readFile(new URL("../../node_modules/axe-core/axe.min.js", import.meta.url), "utf8"),
+      path: resolve(process.cwd(), "node_modules/axe-core/axe.min.js"),
     });
     await expectNoWcagViolations(page);
     await page.getByRole("tab", { name: "Scan QR" }).click();
