@@ -257,6 +257,43 @@ test.describe("JaneQ generator", () => {
     await expect(page.getByText("PNG downloaded.")).toBeVisible();
   });
 
+  test("keeps the selected logo when a replacement image fails", async ({
+    page,
+  }) => {
+    await trackImageObjectUrls(page);
+    await page.goto("/");
+    await page.locator("details.control-disclosure").nth(1).locator("summary").click();
+    const logoInput = page.locator('input[accept="image/png,image/jpeg,image/webp"]');
+    await logoInput.setInputFiles({
+      name: "synthetic-valid-logo.png",
+      mimeType: "image/png",
+      buffer: await qrImageFile("https://synthetic.example/logo").then((file) => file.buffer),
+    });
+    await expect(page.locator(".logo-file-note:not(.error)")).toContainText(
+      "synthetic-valid-logo.png",
+    );
+    await logoInput.setInputFiles({
+      name: "synthetic-broken-logo.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("synthetic broken logo image"),
+    });
+
+    await expect(page.locator(".logo-file-note.error")).toHaveText(
+      "The image could not be decoded.",
+    );
+    await expect(page.locator(".logo-file-note:not(.error)")).toContainText(
+      "synthetic-valid-logo.png",
+    );
+    await expect(page.locator(".upload-label")).toHaveClass(/upload-label-active/);
+    const urls = await page.evaluate(() =>
+      (window as typeof window & {
+        __imageObjectUrls: { created: string[]; revoked: string[] };
+      }).__imageObjectUrls,
+    );
+    expect(urls.created).toHaveLength(2);
+    expect(urls.revoked).toEqual(urls.created);
+  });
+
   test("announces a rejected download without claiming it succeeded", async ({
     page,
   }) => {
@@ -928,9 +965,27 @@ test.describe("JaneQ generator", () => {
       }
     }
 
+    await fileInput.setInputFiles({
+      name: "synthetic-broken-scan.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("synthetic broken scan image"),
+    });
+    await expect(page.getByText("No QR code found in this image.")).toBeVisible({
+      timeout: 15_000,
+    });
+    const failedPreviewUrl = await page.locator('img[alt="Selected QR image preview"]')
+      .getAttribute("src");
+    expect(failedPreviewUrl).toBeTruthy();
+    await expect.poll(() => hasCreatedImageObjectUrl(page, failedPreviewUrl as string))
+      .toBe(true);
+    await expect.poll(() => hasRevokedImageObjectUrl(page, previewUrls[1]))
+      .toBe(true);
+    await expect.poll(() => hasRevokedImageObjectUrl(page, failedPreviewUrl as string))
+      .toBe(false);
+
     await page.getByRole("tab", { name: "Create QR" }).click();
     await expect(page.getByLabel("Website address")).toBeVisible();
-    await expect.poll(() => hasRevokedImageObjectUrl(page, previewUrls[1]))
+    await expect.poll(() => hasRevokedImageObjectUrl(page, failedPreviewUrl as string))
       .toBe(true);
   });
 

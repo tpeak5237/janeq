@@ -300,9 +300,6 @@ export function QrStudio() {
       );
       setNotice(t("noticeLogoProcessing"));
     } catch (error) {
-      setLogoDataUrl(null);
-      setLogoSource("none");
-      setLogoLabel(null);
       const code =
         error instanceof LogoProcessError ? error.code : "process";
       setLogoError(t(LOGO_ERROR_KEYS[code]));
