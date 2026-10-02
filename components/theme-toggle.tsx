@@ -13,19 +13,24 @@ let themeFallback: Theme | null = null;
 
 export function getThemeSnapshot(): Theme {
   if (typeof window === "undefined") return "light";
+  if (themeFallback !== null) return themeFallback;
+
   const preference = readBrowserStorage("janeq-theme");
-  if (!preference.available) {
-    return themeFallback ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-  }
   if (preference.value === "light" || preference.value === "dark") return preference.value;
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 function subscribe(callback: () => void) {
-  window.addEventListener("storage", callback);
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key !== "janeq-theme" && event.key !== null) return;
+    themeFallback = null;
+    callback();
+  };
+
+  window.addEventListener("storage", handleStorage);
   window.addEventListener(THEME_EVENT, callback);
   return () => {
-    window.removeEventListener("storage", callback);
+    window.removeEventListener("storage", handleStorage);
     window.removeEventListener(THEME_EVENT, callback);
   };
 }
@@ -56,8 +61,8 @@ export function ThemeToggle() {
 }
 
 export function setThemePreference(theme: Theme): void {
-  writeBrowserStorage("janeq-theme", theme);
-  themeFallback = theme;
+  const persisted = writeBrowserStorage("janeq-theme", theme);
+  themeFallback = persisted ? null : theme;
   document.documentElement.dataset.theme = theme;
   window.dispatchEvent(new Event(THEME_EVENT));
 }
