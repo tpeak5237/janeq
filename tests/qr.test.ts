@@ -99,6 +99,9 @@ describe("JaneQ direct payloads", () => {
     expect(normalizePromptPayAmount("20")).toBe("20.00");
     expect(normalizePromptPayAmount("99.5")).toBe("99.50");
     expect(normalizePromptPayAmount("1250.00")).toBe("1250.00");
+    expect(normalizePromptPayAmount("9999999999.99")).toBe("9999999999.99");
+    expect(normalizePromptPayAmount("99999999999")).toBeNull();
+    expect(normalizePromptPayAmount("9007199254740993")).toBeNull();
     expect(normalizePromptPayAmount("0")).toBeNull();
     expect(normalizePromptPayAmount("-1")).toBeNull();
     expect(normalizePromptPayAmount("250.999")).toBeNull();
@@ -119,6 +122,13 @@ describe("JaneQ direct payloads", () => {
         promptpayAmount: "250.999",
       }).error,
     ).toContain("2 decimal places");
+    expect(
+      buildPayload("promptpay", {
+        ...DEFAULT_FIELDS,
+        promptpayId: "0812345678",
+        promptpayAmount: "9007199254740993",
+      }).payload,
+    ).toBeNull();
   });
 });
 
