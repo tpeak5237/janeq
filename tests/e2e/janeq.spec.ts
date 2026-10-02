@@ -922,6 +922,7 @@ test.describe("JaneQ generator", () => {
     await page.goto("/");
     await page.getByRole("button", { name: "Switch to dark mode" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(page.getByRole("button", { name: "Switch to light mode" })).toBeVisible();
     await page.getByRole("tab", { name: "Scan QR" }).click();
     await page.getByRole("tab", { name: "Upload image" }).click();
     await page.locator('input[type="file"]').setInputFiles(
