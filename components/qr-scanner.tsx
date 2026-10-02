@@ -458,7 +458,7 @@ export function QrScanner() {
                   {t("scanAnother")}
                 </button>
               </div>
-              {copyNotice ? <p className="scanner-copy-notice">{copyNotice}</p> : null}
+              {copyNotice ? <p className="scanner-copy-notice" role="status">{copyNotice}</p> : null}
             </>
           ) : (
             <div className="scanner-empty-state">

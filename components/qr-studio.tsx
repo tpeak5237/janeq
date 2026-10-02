@@ -331,33 +331,48 @@ export function QrStudio() {
     }
   }
 
-  function triggerDownload(blob: Blob, filename: string) {
-    const objectUrl = URL.createObjectURL(blob);
+  function triggerDownload(blob: Blob, filename: string): boolean {
+    let objectUrl: string | null = null;
     const anchor = document.createElement("a");
-    anchor.href = objectUrl;
-    anchor.download = filename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    let downloadStarted = false;
+    try {
+      objectUrl = URL.createObjectURL(blob);
+      anchor.href = objectUrl;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      downloadStarted = true;
+      return true;
+    } catch {
+      return false;
+    } finally {
+      anchor.remove();
+      if (objectUrl) {
+        if (downloadStarted) {
+          window.setTimeout(() => URL.revokeObjectURL(objectUrl!), 1000);
+        } else {
+          URL.revokeObjectURL(objectUrl);
+        }
+      }
+    }
   }
 
   function downloadPng() {
     if (!artifact?.pngDataUrl) return;
-    triggerDownload(
+    const downloadStarted = triggerDownload(
       dataUrlToBlob(artifact.pngDataUrl),
       makeQrFilename(type, fields, "png"),
     );
-    setNotice(t("noticeDownloadPng"));
+    setNotice(t(downloadStarted ? "noticeDownloadPng" : "noticeDownloadBlocked"));
   }
 
   function downloadSvg() {
     if (!artifact?.svg) return;
-    triggerDownload(
+    const downloadStarted = triggerDownload(
       new Blob([artifact.svg], { type: "image/svg+xml;charset=utf-8" }),
       makeQrFilename(type, fields, "svg"),
     );
-    setNotice(t("noticeDownloadSvg"));
+    setNotice(t(downloadStarted ? "noticeDownloadSvg" : "noticeDownloadBlocked"));
   }
 
   async function copyContent() {
@@ -986,7 +1001,7 @@ export function QrStudio() {
                   : t("waitingInput")}
             </span>
           </div>
-          {notice ? <p className="status-message">{notice}</p> : null}
+          {notice ? <p className="status-message" role="status">{notice}</p> : null}
           {localizedReliabilityMessages.some(
             (message) => message.severity === "warning",
           ) ? (

@@ -257,6 +257,37 @@ test.describe("JaneQ generator", () => {
     await expect(page.getByText("PNG downloaded.")).toBeVisible();
   });
 
+  test("announces a rejected download without claiming it succeeded", async ({
+    page,
+  }) => {
+    const pageErrors: string[] = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+    await page.goto("/");
+    await page.getByLabel("Website address").fill("synthetic.example/download-fail");
+    await expect(await revealPayload(page)).toHaveText(
+      "https://synthetic.example/download-fail",
+    );
+    await page.evaluate(() => {
+      HTMLAnchorElement.prototype.click = function () {
+        if (this.hasAttribute("download")) {
+          throw new DOMException("Mock download failure", "NotAllowedError");
+        }
+      };
+    });
+
+    await page.getByRole("button", { name: /^PNG$/ }).click();
+
+    const notice = page.getByRole("status").filter({
+      hasText: "Download could not be started. Try again.",
+    });
+    await expect(notice).toBeVisible();
+    await expect(page.getByText("PNG downloaded.")).toHaveCount(0);
+    await expect(await revealPayload(page)).toHaveText(
+      "https://synthetic.example/download-fail",
+    );
+    expect(pageErrors).toEqual([]);
+  });
+
   test("ignores a cancelled QR render when an older logo decode finishes late", async ({
     page,
   }) => {
@@ -676,6 +707,41 @@ test.describe("JaneQ generator", () => {
     await scanAnother.focus();
     await scanAnother.press("Enter");
     await expect(page.locator('input[type="file"]')).toBeFocused();
+  });
+
+  test("announces a rejected clipboard write and keeps the decoded result", async ({
+    page,
+  }) => {
+    const payload = "https://synthetic.example/clipboard-fail";
+    await page.goto("/");
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("tab", { name: "Upload image" }).click();
+    await page.locator('input[type="file"]').setInputFiles(await qrImageFile(payload));
+    await expect(page.locator(".scanner-result-value")).toHaveText(payload, {
+      timeout: 15_000,
+    });
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: () =>
+            Promise.reject(new DOMException("Mock clipboard denial", "NotAllowedError")),
+        },
+      });
+    });
+
+    await page.getByRole("button", { name: "Copy" }).click();
+
+    const notice = page.getByRole("status").filter({
+      hasText: "Clipboard access was unavailable.",
+    });
+    await expect(notice).toBeVisible();
+    await expect(page.getByText("Copied.")).toHaveCount(0);
+    await expect(page.locator(".scanner-result-value")).toHaveText(payload);
+    await expect(page.locator(".scanner-result-panel")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
   });
 
   test("keeps active URL schemes inert and does not navigate automatically", async ({
