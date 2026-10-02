@@ -65,4 +65,27 @@ describe("browser preference storage", () => {
     expect(getThemeSnapshot()).toBe("dark");
     expect(documentElement.dataset.theme).toBe("dark");
   });
+
+  it.each([null, "light"] as const)(
+    "keeps the current theme when reads return %s but quota prevents writes",
+    (storedPreference) => {
+      const browserWindow = {
+        dispatchEvent: vi.fn(),
+        matchMedia: vi.fn(() => ({ matches: false })),
+        localStorage: {
+          getItem: vi.fn(() => storedPreference),
+          setItem() {
+            throw new DOMException("Storage quota is exhausted", "QuotaExceededError");
+          },
+        },
+      };
+      vi.stubGlobal("window", browserWindow);
+      vi.stubGlobal("document", { documentElement: { dataset: {}, lang: "en" } });
+
+      setThemePreference("dark");
+
+      expect(getThemeSnapshot()).toBe("dark");
+      expect((document as Document).documentElement.dataset.theme).toBe("dark");
+    },
+  );
 });
