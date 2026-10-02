@@ -78,6 +78,7 @@ export function QrScanner() {
   const pipelineRef = useRef<QrCameraPipeline | null>(null);
   const detectedRef = useRef(false);
   const imageObjectUrlRef = useRef<string | null>(null);
+  const copyRequestRef = useRef(0);
   const imageDecodeRequestRef = useRef(0);
   const startingCameraRef = useRef(false);
   const [inputMode, setInputMode] = useState<InputMode>("camera");
@@ -109,6 +110,8 @@ export function QrScanner() {
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate?.(35);
       }
+      copyRequestRef.current += 1;
+      setCopyNotice(null);
       setResult(classification);
       setStatus("detected");
     } catch {
@@ -134,6 +137,7 @@ export function QrScanner() {
     startingCameraRef.current = true;
     detectedRef.current = false;
     setResult(null);
+    copyRequestRef.current += 1;
     setCopyNotice(null);
     setLowLight(false);
     setStatus("requesting");
@@ -166,6 +170,7 @@ export function QrScanner() {
 
   function resetResult(restoreSourceFocus = false) {
     detectedRef.current = false;
+    copyRequestRef.current += 1;
     setResult(null);
     setCopyNotice(null);
     setStatus("idle");
@@ -231,14 +236,20 @@ export function QrScanner() {
 
   async function copyResult() {
     if (!result) return;
+    const requestId = ++copyRequestRef.current;
+    const copiedPayload = result.label;
     if (!navigator.clipboard?.writeText) {
-      setCopyNotice(t("clipboardUnavailable"));
+      if (requestId === copyRequestRef.current) {
+        setCopyNotice(t("clipboardUnavailable"));
+      }
       return;
     }
     try {
-      await navigator.clipboard.writeText(result.label);
+      await navigator.clipboard.writeText(copiedPayload);
+      if (requestId !== copyRequestRef.current) return;
       setCopyNotice(t("copyResultDone"));
     } catch {
+      if (requestId !== copyRequestRef.current) return;
       setCopyNotice(t("clipboardUnavailable"));
     }
   }

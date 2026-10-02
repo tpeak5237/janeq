@@ -744,6 +744,79 @@ test.describe("JaneQ generator", () => {
     );
   });
 
+  test("ignores stale clipboard feedback after the scan result changes", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const pending: Array<{ resolve: () => void; reject: (reason?: unknown) => void }> = [];
+      Object.defineProperty(window, "__pendingClipboardWrites", { value: pending });
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: () =>
+            new Promise<void>((resolve, reject) => pending.push({ resolve, reject })),
+        },
+      });
+    });
+    await page.goto("/");
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("tab", { name: "Upload image" }).click();
+    const input = page.locator('input[type="file"]');
+    await input.setInputFiles(await qrImageFile("https://synthetic.example/old-scan"));
+    await expect(page.locator(".scanner-result-value")).toHaveText(
+      "https://synthetic.example/old-scan",
+      { timeout: 15_000 },
+    );
+    await page.getByRole("button", { name: "Copy" }).click();
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window as typeof window & {
+          __pendingClipboardWrites: unknown[];
+        }).__pendingClipboardWrites.length,
+      ))
+      .toBe(1);
+
+    await input.setInputFiles(await qrImageFile("https://synthetic.example/new-scan"));
+    await expect(page.locator(".scanner-result-value")).toHaveText(
+      "https://synthetic.example/new-scan",
+      { timeout: 15_000 },
+    );
+    await page.evaluate(() =>
+      (window as typeof window & {
+        __pendingClipboardWrites: Array<{ resolve: () => void }>;
+      }).__pendingClipboardWrites[0].resolve(),
+    );
+    await expect(page.locator(".scanner-copy-notice")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Copy" }).click();
+    await expect
+      .poll(() => page.evaluate(() =>
+        (window as typeof window & {
+          __pendingClipboardWrites: unknown[];
+        }).__pendingClipboardWrites.length,
+      ))
+      .toBe(2);
+    await page.getByRole("button", { name: "Scan another" }).click();
+    await page.getByRole("tab", { name: "Create QR" }).click();
+    await page.getByRole("tab", { name: "Scan QR" }).click();
+    await page.getByRole("tab", { name: "Upload image" }).click();
+    await input.setInputFiles(await qrImageFile("https://synthetic.example/third-scan"));
+    await expect(page.locator(".scanner-result-value")).toHaveText(
+      "https://synthetic.example/third-scan",
+      { timeout: 15_000 },
+    );
+    await page.evaluate(() =>
+      (window as typeof window & {
+        __pendingClipboardWrites: Array<{ reject: (reason?: unknown) => void }>;
+      }).__pendingClipboardWrites[1].reject(new DOMException("Mock denial", "NotAllowedError")),
+    );
+
+    await expect(page.locator(".scanner-copy-notice")).toHaveCount(0);
+    await expect(page.locator(".scanner-result-value")).toHaveText(
+      "https://synthetic.example/third-scan",
+    );
+  });
+
   test("keeps active URL schemes inert and does not navigate automatically", async ({
     page,
   }) => {
