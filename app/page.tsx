@@ -10,6 +10,7 @@ import { QrScanner } from "@/components/qr-scanner";
 import { QrStudio } from "@/components/qr-studio";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useCopy } from "@/lib/i18n";
+import { handleTabListKeyDown } from "@/lib/tablist";
 
 const siteUrl = "https://janeq.theerapat.org";
 type ToolMode = "create" | "scan";
@@ -82,8 +83,10 @@ export default function HomePage() {
                 aria-selected={mode === "create"}
                 className="tool-mode-button"
                 id="mode-create"
+                onKeyDown={handleTabListKeyDown}
                 onClick={() => setMode("create")}
                 role="tab"
+                tabIndex={mode === "create" ? 0 : -1}
                 type="button"
               >
                 {t("createQr")}
@@ -93,8 +96,10 @@ export default function HomePage() {
                 aria-selected={mode === "scan"}
                 className="tool-mode-button"
                 id="mode-scan"
+                onKeyDown={handleTabListKeyDown}
                 onClick={() => setMode("scan")}
                 role="tab"
+                tabIndex={mode === "scan" ? 0 : -1}
                 type="button"
               >
                 {t("scanQr")}
