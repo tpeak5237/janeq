@@ -9,6 +9,7 @@ JaneQ is a client-only static web application. It has no API routes, server acti
 ## Data handling
 
 - URL, text, contact, message, and Wi-Fi fields are kept in React state in the current browser tab.
+- Theme and language choices are the only values saved in `localStorage` (`janeq-theme` and `janeq-locale`). If browser storage is blocked or its quota is exhausted, the controls keep working for the current tab and the preferences reset on reload.
 - Uploaded logos are type-checked and limited to 2 MB before local decoding.
 - Logo files are decoded from a browser object URL, downscaled into a new PNG data URL, and the object URL is revoked in a `finally` block.
 - Generated download object URLs are revoked after the browser receives the download.
@@ -32,7 +33,7 @@ JaneQ does not validate or guarantee the safety of encoded destinations. Users s
 - Run `npm audit` during release review and update dependencies when advisories affect the runtime or build chain.
 - The app should be served over HTTPS in production so browser clipboard and file APIs receive their secure-context permissions.
 
-The dependency baseline updated on 2026-09-22 uses Next.js 16.3.5 and pins Sharp 0.35.4. A clean `npm ci` followed by `npm audit` reported zero findings. Re-run the audit during release review; this dated local result does not replace CI, deployment, or live verification.
+The dependency baseline checked on 2026-10-01 pins Next.js 16.3.8 and Sharp 0.35.4. A full `npm audit` and `npm audit --omit=dev --audit-level=high` reported zero findings after compatible lockfile updates. Re-run the audit during release review; this dated local result does not replace CI, deployment, or live verification.
 
 ## Not implemented by design
 

@@ -3,29 +3,40 @@
 import { useEffect, useSyncExternalStore } from "react";
 
 import { Icon } from "@/components/icons";
+import { readBrowserStorage, writeBrowserStorage } from "@/lib/browser-storage";
 import { useCopy } from "@/lib/i18n";
 
 type Theme = "light" | "dark";
 
 const THEME_EVENT = "janeq-theme-change";
+let themeFallback: Theme | null = null;
 
-function getTheme(): Theme {
+export function getThemeSnapshot(): Theme {
   if (typeof window === "undefined") return "light";
-  const storedTheme = window.localStorage.getItem("janeq-theme") as Theme | null;
-  return storedTheme ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  if (themeFallback !== null) return themeFallback;
+
+  const preference = readBrowserStorage("janeq-theme");
+  if (preference.value === "light" || preference.value === "dark") return preference.value;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 function subscribe(callback: () => void) {
-  window.addEventListener("storage", callback);
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key !== "janeq-theme" && event.key !== null) return;
+    themeFallback = null;
+    callback();
+  };
+
+  window.addEventListener("storage", handleStorage);
   window.addEventListener(THEME_EVENT, callback);
   return () => {
-    window.removeEventListener("storage", callback);
+    window.removeEventListener("storage", handleStorage);
     window.removeEventListener(THEME_EVENT, callback);
   };
 }
 
 export function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribe, getTheme, () => "light");
+  const theme = useSyncExternalStore(subscribe, getThemeSnapshot, () => "light");
   const { t } = useCopy();
 
   useEffect(() => {
@@ -34,9 +45,7 @@ export function ThemeToggle() {
 
   function toggleTheme() {
     const nextTheme = theme === "light" ? "dark" : "light";
-    window.localStorage.setItem("janeq-theme", nextTheme);
-    document.documentElement.dataset.theme = nextTheme;
-    window.dispatchEvent(new Event(THEME_EVENT));
+    setThemePreference(nextTheme);
   }
 
   return (
@@ -49,4 +58,11 @@ export function ThemeToggle() {
       <Icon name={theme === "light" ? "moon" : "sun"} />
     </button>
   );
+}
+
+export function setThemePreference(theme: Theme): void {
+  const persisted = writeBrowserStorage("janeq-theme", theme);
+  themeFallback = persisted ? null : theme;
+  document.documentElement.dataset.theme = theme;
+  window.dispatchEvent(new Event(THEME_EVENT));
 }

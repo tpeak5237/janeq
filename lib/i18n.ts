@@ -8,10 +8,12 @@ import type {
   QrType,
   ReliabilityMessage,
 } from "@/lib/qr";
+import { readBrowserStorage, writeBrowserStorage } from "@/lib/browser-storage";
 
 export type Locale = "en" | "th";
 
 const LOCALE_EVENT = "janeq-locale-change";
+let localeFallback: Locale | null = null;
 
 const en = {
     siteSubtitle: "Just Another Non-Existent QR Code",
@@ -215,6 +217,7 @@ const en = {
       "Most scanners expect a dark code on a light background. Invert the colors if scans fail.",
     noticeDownloadPng: "PNG downloaded.",
     noticeDownloadSvg: "SVG downloaded.",
+    noticeDownloadBlocked: "Download could not be started. Try again.",
     noticeCopyContent: "Copied.",
     noticeCopyImage: "Image copied.",
     noticeClipboardBlocked: "Clipboard was blocked. Select the encoded text to copy it.",
@@ -443,6 +446,7 @@ const th: Record<keyof typeof en, string> = {
     warningPolarityBody: "เครื่องสแกนส่วนมากต้องการคิวอาร์เข้มบนพื้นสว่าง ถ้าสแกนไม่ติดให้สลับสี",
     noticeDownloadPng: "ดาวน์โหลด PNG แล้ว",
     noticeDownloadSvg: "ดาวน์โหลด SVG แล้ว",
+    noticeDownloadBlocked: "เริ่มดาวน์โหลดไม่ได้ ลองอีกครั้ง",
     noticeCopyContent: "คัดลอกแล้ว",
     noticeCopyImage: "คัดลอกรูปแล้ว",
     noticeClipboardBlocked: "ใช้คลิปบอร์ดไม่ได้ เลือกข้อความแล้วคัดลอกเอง",
@@ -491,26 +495,36 @@ export function translate(
   return value;
 }
 
-function getLocale(): Locale {
+export function getLocaleSnapshot(): Locale {
   if (typeof window === "undefined") return "en";
-  return window.localStorage.getItem("janeq-locale") === "th" ? "th" : "en";
+  if (localeFallback !== null) return localeFallback;
+
+  const preference = readBrowserStorage("janeq-locale");
+  return preference.value === "th" ? "th" : "en";
 }
 
 function subscribeLocale(callback: () => void) {
-  window.addEventListener("storage", callback);
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key !== "janeq-locale" && event.key !== null) return;
+    localeFallback = null;
+    callback();
+  };
+
+  window.addEventListener("storage", handleStorage);
   window.addEventListener(LOCALE_EVENT, callback);
   return () => {
-    window.removeEventListener("storage", callback);
+    window.removeEventListener("storage", handleStorage);
     window.removeEventListener(LOCALE_EVENT, callback);
   };
 }
 
 export function useLocale(): Locale {
-  return useSyncExternalStore(subscribeLocale, getLocale, () => "en");
+  return useSyncExternalStore(subscribeLocale, getLocaleSnapshot, () => "en");
 }
 
 export function setLocale(locale: Locale): void {
-  window.localStorage.setItem("janeq-locale", locale);
+  const persisted = writeBrowserStorage("janeq-locale", locale);
+  localeFallback = persisted ? null : locale;
   document.documentElement.lang = locale === "th" ? "th" : "en";
   window.dispatchEvent(new Event(LOCALE_EVENT));
 }

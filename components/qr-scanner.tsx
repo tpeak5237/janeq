@@ -22,6 +22,7 @@ import {
 } from "@/lib/qr-camera-pipeline";
 import { useCopy, type TranslationKey } from "@/lib/i18n";
 import { playScanSuccessSound, primeScanSuccessSound } from "@/lib/scan-sound";
+import { handleTabListKeyDown } from "@/lib/tablist";
 
 type InputMode = "camera" | "upload";
 type ScannerStatus =
@@ -72,9 +73,13 @@ function cameraErrorStatus(error: unknown): ScannerStatus {
 export function QrScanner() {
   const { t } = useCopy();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const cameraActionRef = useRef<HTMLButtonElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const pipelineRef = useRef<QrCameraPipeline | null>(null);
   const detectedRef = useRef(false);
   const imageObjectUrlRef = useRef<string | null>(null);
+  const copyRequestRef = useRef(0);
+  const imageDecodeRequestRef = useRef(0);
   const startingCameraRef = useRef(false);
   const [inputMode, setInputMode] = useState<InputMode>("camera");
   const [status, setStatus] = useState<ScannerStatus>("idle");
@@ -87,12 +92,12 @@ export function QrScanner() {
   const [lowLight, setLowLight] = useState(false);
   const [copyNotice, setCopyNotice] = useState<string | null>(null);
 
-  function clearImagePreview() {
+  function clearImagePreview(updateState = true) {
     if (imageObjectUrlRef.current) {
       URL.revokeObjectURL(imageObjectUrlRef.current);
       imageObjectUrlRef.current = null;
     }
-    setImagePreviewUrl(null);
+    if (updateState) setImagePreviewUrl(null);
   }
 
   function handleDecodedValue(value: string) {
@@ -105,6 +110,8 @@ export function QrScanner() {
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate?.(35);
       }
+      copyRequestRef.current += 1;
+      setCopyNotice(null);
       setResult(classification);
       setStatus("detected");
     } catch {
@@ -130,6 +137,7 @@ export function QrScanner() {
     startingCameraRef.current = true;
     detectedRef.current = false;
     setResult(null);
+    copyRequestRef.current += 1;
     setCopyNotice(null);
     setLowLight(false);
     setStatus("requesting");
@@ -160,17 +168,23 @@ export function QrScanner() {
     if (typeof nextValue === "boolean") setTorchOn(nextValue);
   }
 
-  function resetResult() {
+  function resetResult(restoreSourceFocus = false) {
     detectedRef.current = false;
+    copyRequestRef.current += 1;
     setResult(null);
     setCopyNotice(null);
     setStatus("idle");
+    if (restoreSourceFocus) {
+      (inputMode === "camera" ? cameraActionRef.current : imageInputRef.current)?.focus();
+    }
   }
 
   function selectInputMode(nextMode: InputMode) {
     if (nextMode === inputMode) return;
+    imageDecodeRequestRef.current += 1;
+    pipelineRef.current?.stop();
+    clearImagePreview();
     if (nextMode === "upload") {
-      pipelineRef.current?.stop();
       setLowLight(false);
       setHasTorch(false);
       setTorchOn(false);
@@ -180,6 +194,8 @@ export function QrScanner() {
   }
 
   async function decodeImage(file: File) {
+    const requestId = ++imageDecodeRequestRef.current;
+    pipelineRef.current?.stop();
     clearImagePreview();
     resetResult();
     if (!file.type.startsWith("image/")) {
@@ -197,10 +213,11 @@ export function QrScanner() {
     setStatus("decoding");
     primeScanSuccessSound();
     try {
-      pipelineRef.current?.stop();
       const decoded = await pipelineRef.current?.decodeImage(file);
+      if (requestId !== imageDecodeRequestRef.current) return;
       if (decoded) handleDecodedValue(decoded);
     } catch {
+      if (requestId !== imageDecodeRequestRef.current) return;
       setStatus("no-result");
     }
   }
@@ -219,14 +236,20 @@ export function QrScanner() {
 
   async function copyResult() {
     if (!result) return;
+    const requestId = ++copyRequestRef.current;
+    const copiedPayload = result.label;
     if (!navigator.clipboard?.writeText) {
-      setCopyNotice(t("clipboardUnavailable"));
+      if (requestId === copyRequestRef.current) {
+        setCopyNotice(t("clipboardUnavailable"));
+      }
       return;
     }
     try {
-      await navigator.clipboard.writeText(result.label);
+      await navigator.clipboard.writeText(copiedPayload);
+      if (requestId !== copyRequestRef.current) return;
       setCopyNotice(t("copyResultDone"));
     } catch {
+      if (requestId !== copyRequestRef.current) return;
       setCopyNotice(t("clipboardUnavailable"));
     }
   }
@@ -247,9 +270,10 @@ export function QrScanner() {
     });
     pipelineRef.current = pipeline;
     return () => {
+      imageDecodeRequestRef.current += 1;
       pipeline.destroy();
       pipelineRef.current = null;
-      clearImagePreview();
+      clearImagePreview(false);
     };
   }, []);
 
@@ -276,19 +300,27 @@ export function QrScanner() {
 
       <div aria-label={t("scannerInputAria")} className="scanner-tabs" role="tablist">
         <button
+          aria-controls="scanner-source-panel"
           aria-selected={inputMode === "camera"}
           className="segmented-button"
+          id="scanner-camera-tab"
+          onKeyDown={handleTabListKeyDown}
           onClick={() => selectInputMode("camera")}
           role="tab"
+          tabIndex={inputMode === "camera" ? 0 : -1}
           type="button"
         >
           {t("camera")}
         </button>
         <button
+          aria-controls="scanner-source-panel"
           aria-selected={inputMode === "upload"}
           className="segmented-button"
+          id="scanner-upload-tab"
+          onKeyDown={handleTabListKeyDown}
           onClick={() => selectInputMode("upload")}
           role="tab"
+          tabIndex={inputMode === "upload" ? 0 : -1}
           type="button"
         >
           {t("uploadImage")}
@@ -296,8 +328,13 @@ export function QrScanner() {
       </div>
 
       <div className="scanner-grid">
-        <div className="scanner-source">
-          {inputMode === "camera" ? (
+        <div
+          aria-labelledby={inputMode === "camera" ? "scanner-camera-tab" : "scanner-upload-tab"}
+          className="scanner-source"
+          id="scanner-source-panel"
+          role="tabpanel"
+        >
+        {inputMode === "camera" ? (
             <div className="camera-panel">
               <div className="camera-frame">
                 <video
@@ -318,6 +355,7 @@ export function QrScanner() {
                   <button
                     className="action-button action-button-primary"
                     onClick={stopCamera}
+                    ref={cameraActionRef}
                     type="button"
                   >
                     {t("stopCamera")}
@@ -326,6 +364,7 @@ export function QrScanner() {
                   <button
                     className="action-button action-button-primary"
                     onClick={() => void startCamera()}
+                    ref={cameraActionRef}
                     type="button"
                   >
                     {t("startCamera")}
@@ -371,6 +410,7 @@ export function QrScanner() {
               <input
                 accept="image/*"
                 onChange={handleImageUpload}
+                ref={imageInputRef}
                 type="file"
               />
               {imagePreviewUrl ? (
@@ -421,11 +461,15 @@ export function QrScanner() {
                     {t("openLink")}
                   </a>
                 ) : null}
-                <button className="action-button" onClick={resetResult} type="button">
+                <button
+                  className="action-button"
+                  onClick={() => resetResult(true)}
+                  type="button"
+                >
                   {t("scanAnother")}
                 </button>
               </div>
-              {copyNotice ? <p className="scanner-copy-notice">{copyNotice}</p> : null}
+              {copyNotice ? <p className="scanner-copy-notice" role="status">{copyNotice}</p> : null}
             </>
           ) : (
             <div className="scanner-empty-state">

@@ -64,6 +64,33 @@ describe("QR scanner payload safety", () => {
     });
   });
 
+  it.each([
+    "javascript:alert(1)",
+    "data:text/html,<script>alert(1)</script>",
+    "file:///etc/passwd",
+    "vbscript:msgbox(1)",
+    "blob:https://example.com/1234",
+  ])("keeps active URL scheme %s inert", (payload) => {
+    expect(classifyQrPayload(payload)).toEqual({
+      kind: "text",
+      label: payload,
+      openable: false,
+    });
+    expect(isUnsafeScanPayload(payload)).toBe(true);
+    expect(isSafeExternalUrl(payload)).toBe(false);
+  });
+
+  it("keeps ordinary HTTP(S) links openable without transforming their payload", () => {
+    for (const payload of ["https://example.com/a?b=1", "http://example.org/qr"]) {
+      expect(classifyQrPayload(payload)).toEqual({
+        kind: "url",
+        label: payload,
+        openable: true,
+      });
+      expect(isUnsafeScanPayload(payload)).toBe(false);
+    }
+  });
+
   it("trims decoder output while retaining a stable empty-result failure", () => {
     expect(normalizeScanResult("  https://example.com  ")).toBe(
       "https://example.com",

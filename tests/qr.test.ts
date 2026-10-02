@@ -13,6 +13,7 @@ import {
   normalizePromptPayId,
   normalizeUrlInput,
   renderQrSvg,
+  svgDataUrl,
 } from "@/lib/qr";
 
 describe("JaneQ direct payloads", () => {
@@ -25,6 +26,13 @@ describe("JaneQ direct payloads", () => {
     const result = buildPayload("url", { ...DEFAULT_FIELDS, url: "example.com/hello?name=Jane" });
     expect(result.payload).toBe("https://example.com/hello?name=Jane");
     expect(result.hint).toContain("https://example.com/hello?name=Jane");
+  });
+
+  it("preserves reserved URL characters in the encoded destination", () => {
+    const url = "https://example.com/a%2Fb?x=one+two&y=%26#fragment";
+    expect(
+      buildPayload("url", { ...DEFAULT_FIELDS, url }).payload,
+    ).toBe(url);
   });
 
   it("preserves Unicode and Thai text exactly", () => {
@@ -91,6 +99,9 @@ describe("JaneQ direct payloads", () => {
     expect(normalizePromptPayAmount("20")).toBe("20.00");
     expect(normalizePromptPayAmount("99.5")).toBe("99.50");
     expect(normalizePromptPayAmount("1250.00")).toBe("1250.00");
+    expect(normalizePromptPayAmount("9999999999.99")).toBe("9999999999.99");
+    expect(normalizePromptPayAmount("99999999999")).toBeNull();
+    expect(normalizePromptPayAmount("9007199254740993")).toBeNull();
     expect(normalizePromptPayAmount("0")).toBeNull();
     expect(normalizePromptPayAmount("-1")).toBeNull();
     expect(normalizePromptPayAmount("250.999")).toBeNull();
@@ -111,6 +122,13 @@ describe("JaneQ direct payloads", () => {
         promptpayAmount: "250.999",
       }).error,
     ).toContain("2 decimal places");
+    expect(
+      buildPayload("promptpay", {
+        ...DEFAULT_FIELDS,
+        promptpayId: "0812345678",
+        promptpayAmount: "9007199254740993",
+      }).payload,
+    ).toBeNull();
   });
 });
 
@@ -143,6 +161,21 @@ describe("JaneQ reliability helpers", () => {
     });
     expect(svg).not.toContain("<script>");
     expect(svg).toContain("&quot;");
+  });
+
+  it("escapes hostile logo metadata and keeps the SVG data URL round-trippable", () => {
+    const matrix = createQrMatrix("synthetic hostile payload </svg><script>alert(1)</script>", "M");
+    const hostileLogo = 'data:image/png;base64,AA==" onload="alert(1)&<script>';
+    const svg = renderQrSvg(matrix, DEFAULT_CUSTOMIZATION, hostileLogo);
+    const image = svg.match(/<image\b[^>]*\/>/)?.[0];
+
+    expect(image).toContain(
+      'href="data:image/png;base64,AA==&quot; onload=&quot;alert(1)&amp;&lt;script&gt;"',
+    );
+    expect(image).not.toContain(' onload="');
+    expect(svg).not.toContain("<script>");
+    expect(svg).not.toContain("synthetic hostile payload");
+    expect(decodeURIComponent(svgDataUrl(svg).split(",")[1])).toBe(svg);
   });
 
   it("creates predictable filenames for exports", () => {

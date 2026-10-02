@@ -9,6 +9,7 @@
   --color-muted: 96 109 116;
   --color-line: 205 214 214;
   --color-coral: 233 103 79;
+  --color-coral-text: 177 61 41;
   --color-lime: 215 238 115;
   --color-success: 44 128 89;
   --color-warning: 154 90 20;
@@ -36,6 +37,7 @@ html[lang="th"] {
   --color-muted: 172 183 186;
   --color-line: 58 72 77;
   --color-coral: 255 143 115;
+  --color-coral-text: 255 143 115;
   --color-lime: 215 238 115;
   --color-success: 125 218 166;
   --color-warning: 246 196 110;
@@ -52,6 +54,7 @@ html[lang="th"] {
     --color-muted: 172 183 186;
     --color-line: 58 72 77;
     --color-coral: 255 143 115;
+    --color-coral-text: 255 143 115;
     --color-lime: 215 238 115;
     --color-success: 125 218 166;
     --color-warning: 246 196 110;
@@ -74,7 +77,6 @@ body {
   color: rgb(var(--color-ink));
   font-family: var(--font-body);
   margin: 0;
-  min-width: 320px;
   text-rendering: optimizeLegibility;
   transition: background-color 180ms ease, color 180ms ease;
 }
@@ -283,7 +285,7 @@ summary:focus-visible {
 .eyebrow::first-letter,
 .workspace-kicker,
 .preview-kicker {
-  color: rgb(var(--color-coral));
+  color: rgb(var(--color-coral-text));
 }
 
 .hero-copy h1,
@@ -530,12 +532,16 @@ summary:focus-visible {
 }
 
 .type-button-icon {
-  color: rgb(var(--color-coral));
+  color: rgb(var(--color-coral-text));
   flex: 0 0 auto;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 800;
   width: 19px;
+}
+
+.type-button[aria-pressed="true"] .type-button-icon {
+  color: inherit;
 }
 
 .type-button-label {
@@ -674,7 +680,7 @@ summary:focus-visible {
 }
 
 .promptpay-summary-label {
-  color: rgb(var(--color-coral));
+  color: rgb(var(--color-coral-text));
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.045em;
@@ -826,7 +832,7 @@ input[type="range"] {
 }
 
 .logo-file-note.error {
-  color: rgb(var(--color-coral));
+  color: rgb(var(--color-coral-text));
 }
 
 .validation-stack {
@@ -1139,7 +1145,7 @@ input[type="range"] {
 .action-button-primary {
   background: rgb(var(--color-coral));
   border-color: rgb(var(--color-coral));
-  color: #fff;
+  color: #101922;
 }
 
 .action-button-primary:hover:not(:disabled) {
@@ -1838,7 +1844,7 @@ html[lang="th"] .field-textarea {
 .image-dropzone-mark {
   align-items: center;
   border: 1px solid rgb(var(--color-coral));
-  color: rgb(var(--color-coral));
+  color: rgb(var(--color-coral-text));
   display: inline-flex;
   font-family: var(--font-mono);
   font-size: 11px;
@@ -1915,7 +1921,7 @@ html[lang="th"] .field-textarea {
 }
 
 .scanner-hostname {
-  color: rgb(var(--color-coral));
+  color: rgb(var(--color-coral-text));
   font-size: 17px;
   font-weight: 800;
   margin: 18px 0 8px;
@@ -2058,5 +2064,37 @@ html[lang="th"] .field-textarea {
 
   .brand-subtitle {
     display: none;
+  }
+}
+
+@media (max-width: 319px) {
+  .site-header-inner {
+    flex-wrap: wrap;
+    padding-block: 8px;
+    row-gap: 8px;
+  }
+
+  .site-nav {
+    gap: 6px;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .scanner-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .segmented-button {
+    padding-inline: 4px;
+    white-space: normal;
+  }
+
+  .scanner-shell {
+    padding: 12px;
   }
 }
