@@ -495,16 +495,23 @@ export function translate(
 
 export function getLocaleSnapshot(): Locale {
   if (typeof window === "undefined") return "en";
+  if (localeFallback !== null) return localeFallback;
+
   const preference = readBrowserStorage("janeq-locale");
-  if (!preference.available) return localeFallback ?? "en";
   return preference.value === "th" ? "th" : "en";
 }
 
 function subscribeLocale(callback: () => void) {
-  window.addEventListener("storage", callback);
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key !== "janeq-locale" && event.key !== null) return;
+    localeFallback = null;
+    callback();
+  };
+
+  window.addEventListener("storage", handleStorage);
   window.addEventListener(LOCALE_EVENT, callback);
   return () => {
-    window.removeEventListener("storage", callback);
+    window.removeEventListener("storage", handleStorage);
     window.removeEventListener(LOCALE_EVENT, callback);
   };
 }
@@ -514,8 +521,8 @@ export function useLocale(): Locale {
 }
 
 export function setLocale(locale: Locale): void {
-  writeBrowserStorage("janeq-locale", locale);
-  localeFallback = locale;
+  const persisted = writeBrowserStorage("janeq-locale", locale);
+  localeFallback = persisted ? null : locale;
   document.documentElement.lang = locale === "th" ? "th" : "en";
   window.dispatchEvent(new Event(LOCALE_EVENT));
 }
