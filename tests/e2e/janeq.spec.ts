@@ -879,6 +879,36 @@ test.describe("JaneQ generator", () => {
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   });
 
+
+  test("keeps quota-limited language changes and cross-tab updates in sync", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const nativeSetItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key, value) {
+        if (key === "janeq-locale") {
+          throw new DOMException("Storage quota is exhausted", "QuotaExceededError");
+        }
+        nativeSetItem.call(this, key, value);
+      };
+    });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Switch to Thai" }).click();
+
+    await expect(page.locator("html")).toHaveAttribute("lang", "th");
+    await expect(page.getByRole("button", { name: "เปลี่ยนเป็นภาษาอังกฤษ" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "สร้าง QR" })).toBeVisible();
+
+    const otherPage = await page.context().newPage();
+    await otherPage.goto("/");
+    await otherPage.evaluate(() => window.localStorage.setItem("janeq-locale", "en"));
+
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(page.getByRole("button", { name: "Switch to Thai" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Create QR" })).toBeVisible();
+    await otherPage.close();
+  });
+
   test("keeps the current synthetic scan visible when local storage is denied", async ({
     page,
   }) => {
