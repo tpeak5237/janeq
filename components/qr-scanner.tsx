@@ -22,6 +22,7 @@ import {
 } from "@/lib/qr-camera-pipeline";
 import { useCopy, type TranslationKey } from "@/lib/i18n";
 import { playScanSuccessSound, primeScanSuccessSound } from "@/lib/scan-sound";
+import { handleTabListKeyDown } from "@/lib/tablist";
 
 type InputMode = "camera" | "upload";
 type ScannerStatus =
@@ -72,6 +73,8 @@ function cameraErrorStatus(error: unknown): ScannerStatus {
 export function QrScanner() {
   const { t } = useCopy();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const cameraActionRef = useRef<HTMLButtonElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const pipelineRef = useRef<QrCameraPipeline | null>(null);
   const detectedRef = useRef(false);
   const imageObjectUrlRef = useRef<string | null>(null);
@@ -161,11 +164,14 @@ export function QrScanner() {
     if (typeof nextValue === "boolean") setTorchOn(nextValue);
   }
 
-  function resetResult() {
+  function resetResult(restoreSourceFocus = false) {
     detectedRef.current = false;
     setResult(null);
     setCopyNotice(null);
     setStatus("idle");
+    if (restoreSourceFocus) {
+      (inputMode === "camera" ? cameraActionRef.current : imageInputRef.current)?.focus();
+    }
   }
 
   function selectInputMode(nextMode: InputMode) {
@@ -283,19 +289,27 @@ export function QrScanner() {
 
       <div aria-label={t("scannerInputAria")} className="scanner-tabs" role="tablist">
         <button
+          aria-controls="scanner-source-panel"
           aria-selected={inputMode === "camera"}
           className="segmented-button"
+          id="scanner-camera-tab"
+          onKeyDown={handleTabListKeyDown}
           onClick={() => selectInputMode("camera")}
           role="tab"
+          tabIndex={inputMode === "camera" ? 0 : -1}
           type="button"
         >
           {t("camera")}
         </button>
         <button
+          aria-controls="scanner-source-panel"
           aria-selected={inputMode === "upload"}
           className="segmented-button"
+          id="scanner-upload-tab"
+          onKeyDown={handleTabListKeyDown}
           onClick={() => selectInputMode("upload")}
           role="tab"
+          tabIndex={inputMode === "upload" ? 0 : -1}
           type="button"
         >
           {t("uploadImage")}
@@ -303,8 +317,13 @@ export function QrScanner() {
       </div>
 
       <div className="scanner-grid">
-        <div className="scanner-source">
-          {inputMode === "camera" ? (
+        <div
+          aria-labelledby={inputMode === "camera" ? "scanner-camera-tab" : "scanner-upload-tab"}
+          className="scanner-source"
+          id="scanner-source-panel"
+          role="tabpanel"
+        >
+        {inputMode === "camera" ? (
             <div className="camera-panel">
               <div className="camera-frame">
                 <video
@@ -325,6 +344,7 @@ export function QrScanner() {
                   <button
                     className="action-button action-button-primary"
                     onClick={stopCamera}
+                    ref={cameraActionRef}
                     type="button"
                   >
                     {t("stopCamera")}
@@ -333,6 +353,7 @@ export function QrScanner() {
                   <button
                     className="action-button action-button-primary"
                     onClick={() => void startCamera()}
+                    ref={cameraActionRef}
                     type="button"
                   >
                     {t("startCamera")}
@@ -378,6 +399,7 @@ export function QrScanner() {
               <input
                 accept="image/*"
                 onChange={handleImageUpload}
+                ref={imageInputRef}
                 type="file"
               />
               {imagePreviewUrl ? (
@@ -428,7 +450,11 @@ export function QrScanner() {
                     {t("openLink")}
                   </a>
                 ) : null}
-                <button className="action-button" onClick={resetResult} type="button">
+                <button
+                  className="action-button"
+                  onClick={() => resetResult(true)}
+                  type="button"
+                >
                   {t("scanAnother")}
                 </button>
               </div>
