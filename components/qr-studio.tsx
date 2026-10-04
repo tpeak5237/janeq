@@ -5,6 +5,7 @@ import {
   InputHTMLAttributes,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -183,6 +184,8 @@ export function QrStudio() {
   const [logoSource, setLogoSource] = useState<LogoSource>("none");
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [logoLabel, setLogoLabel] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const logoProcessRequestRef = useRef(0);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [artifact, setArtifact] = useState<QrArtifact | null>(null);
   const [isLogoProcessing, setIsLogoProcessing] = useState(false);
@@ -286,10 +289,12 @@ export function QrStudio() {
   async function handleLogoUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    const requestId = ++logoProcessRequestRef.current;
     setIsLogoProcessing(true);
     setLogoError(null);
     try {
       const processedLogo = await processLogoFile(file);
+      if (requestId !== logoProcessRequestRef.current) return;
       setLogoDataUrl(processedLogo);
       setLogoSource("upload");
       setLogoLabel(file.name);
@@ -300,16 +305,22 @@ export function QrStudio() {
       );
       setNotice(t("noticeLogoProcessing"));
     } catch (error) {
+      if (requestId !== logoProcessRequestRef.current) return;
       const code =
         error instanceof LogoProcessError ? error.code : "process";
       setLogoError(t(LOGO_ERROR_KEYS[code]));
     } finally {
-      setIsLogoProcessing(false);
-      event.target.value = "";
+      if (requestId === logoProcessRequestRef.current) {
+        setIsLogoProcessing(false);
+        event.target.value = "";
+      }
     }
   }
 
   function chooseLogo(source: LogoSource) {
+    logoProcessRequestRef.current += 1;
+    setIsLogoProcessing(false);
+    if (logoInputRef.current) logoInputRef.current.value = "";
     setLogoSource(source);
     setLogoError(null);
     if (source === "none") {
@@ -934,6 +945,7 @@ export function QrStudio() {
                 accept="image/png,image/jpeg,image/webp"
                 disabled={isLogoProcessing}
                 onChange={handleLogoUpload}
+                ref={logoInputRef}
                 type="file"
               />
             </label>

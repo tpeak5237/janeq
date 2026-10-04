@@ -12,7 +12,6 @@ import {
   classifyQrPayload,
   getSafeExternalUrl,
   isUnsafeScanPayload,
-  normalizeScanResult,
   type ScanPayloadClassification,
   type ScanPayloadKind,
 } from "@/lib/scanner";
@@ -23,6 +22,7 @@ import {
 import { useCopy, type TranslationKey } from "@/lib/i18n";
 import { playScanSuccessSound, primeScanSuccessSound } from "@/lib/scan-sound";
 import { handleTabListKeyDown } from "@/lib/tablist";
+import { createScanObservation, type ScanSource } from "@/lib/scan-observation";
 
 type InputMode = "camera" | "upload";
 type ScannerStatus =
@@ -100,10 +100,11 @@ export function QrScanner() {
     if (updateState) setImagePreviewUrl(null);
   }
 
-  function handleDecodedValue(value: string) {
+  function handleDecodedValue(value: string, source: ScanSource) {
     if (detectedRef.current) return;
     try {
-      const classification = classifyQrPayload(normalizeScanResult(value));
+      const observation = createScanObservation(value, source);
+      const classification = classifyQrPayload(observation.payload);
       detectedRef.current = true;
       pipelineRef.current?.stop();
       playScanSuccessSound();
@@ -215,7 +216,7 @@ export function QrScanner() {
     try {
       const decoded = await pipelineRef.current?.decodeImage(file);
       if (requestId !== imageDecodeRequestRef.current) return;
-      if (decoded) handleDecodedValue(decoded);
+      if (decoded) handleDecodedValue(decoded, "image-upload");
     } catch {
       if (requestId !== imageDecodeRequestRef.current) return;
       setStatus("no-result");
@@ -258,7 +259,7 @@ export function QrScanner() {
     const video = videoRef.current;
     if (!video) return;
     const pipeline = new QrCameraPipeline(video, {
-      onDecoded: handleDecodedValue,
+      onDecoded: (value) => handleDecodedValue(value, "camera"),
       onLightingChange: (isLowLight) => setLowLight(isLowLight),
       onReady: ({ cameras: availableCameras, activeDeviceId: nextDeviceId, hasTorch: torchSupported }) => {
         setCameras(availableCameras);
@@ -269,7 +270,22 @@ export function QrScanner() {
       },
     });
     pipelineRef.current = pipeline;
+    const stopCameraWhenHidden = () => {
+      if (document.visibilityState !== "hidden") return;
+      detectedRef.current = false;
+      imageDecodeRequestRef.current += 1;
+      copyRequestRef.current += 1;
+      setCopyNotice(null);
+      pipeline.stop();
+      setLowLight(false);
+      setHasTorch(false);
+      setTorchOn(false);
+      setActiveDeviceId(undefined);
+      setStatus("idle");
+    };
+    document.addEventListener("visibilitychange", stopCameraWhenHidden);
     return () => {
+      document.removeEventListener("visibilitychange", stopCameraWhenHidden);
       imageDecodeRequestRef.current += 1;
       pipeline.destroy();
       pipelineRef.current = null;
