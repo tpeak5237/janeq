@@ -103,10 +103,24 @@ test('system theme initializes from preferences and narrow enlarged Thai content
   const value = 'javascript:' + 'ก'.repeat(100);
   await page.locator('input[type=file]').setInputFiles(await imageFile(value));
   await expect(page.locator('.scanner-result-value')).toHaveText(value);
+  // px-sized payload/feedback text does not inherit a root rem increase.
+  // Explicitly double it to exercise text resizing as well as rem geometry.
+  await page.locator('.scanner-result-value, .scanner-unsafe, .scanner-copy-notice, .scanner-result-panel .action-button').evaluateAll(elements => {
+    for (const element of elements) (element as HTMLElement).style.fontSize = `${parseFloat(getComputedStyle(element).fontSize) * 2}px`;
+  });
+  await expect(page.locator('.scanner-unsafe')).toHaveCSS('font-size', '24px');
   await expect(page.locator('.scanner-unsafe')).toBeVisible();
+  expect(await page.locator('.scanner-unsafe').evaluate(e => e.scrollHeight <= e.clientHeight)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(await page.locator('.scanner-result-value').evaluate(e => e.scrollHeight > e.clientHeight)).toBe(true);
   await expect(page.locator('.scanner-copy-notice')).toHaveCSS('overflow', 'visible');
+  const beforeNotice = (await page.locator('.scanner-result-panel').boundingBox())!.height;
+  // Synthetic expanded-localization fixture, never a real user payload.
+  await page.locator('.scanner-copy-notice').evaluate(e => e.textContent = 'ข้อความแจ้งผลที่ยาวขึ้นต้องอ่านได้ครบและไม่ถูกตัด '.repeat(12));
+  expect((await page.locator('.scanner-result-panel').boundingBox())!.height).toBeGreaterThan(beforeNotice);
+  expect(await page.locator('.scanner-copy-notice').evaluate(e => e.scrollHeight <= e.clientHeight)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(page.locator('.scanner-result-panel .action-button').first()).toHaveCSS('font-size', '22px');
 });
 
 test('touch controls acknowledge selection without delaying scanner reset', async ({ page, isMobile }) => {

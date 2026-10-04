@@ -50,6 +50,33 @@ for (const rejected of [false, true]) {
     await expect(page.locator('.status-message')).toContainText(rejected ? /clipboard|blocked/i : /copied/i);
     expect(await png.evaluate(e => (e as HTMLElement).offsetTop)).toBe(before);
   });
+
+  test(`scanner clipboard ${rejected ? 'failure' : 'success'} keeps result layout and acknowledgment stable`, async ({ page }) => {
+    await page.addInitScript(fail => {
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+        writeText: async () => { if (fail) throw new DOMException('Blocked', 'NotAllowedError'); },
+      } });
+      Object.assign(window, { scannerAcknowledgments: 0 });
+      document.addEventListener('animationstart', e => {
+        if ((e.target as Element)?.classList.contains('scanner-result-indicator')) {
+          (window as unknown as { scannerAcknowledgments: number }).scannerAcknowledgments++;
+        }
+      });
+    }, rejected);
+    await page.goto('/');
+    await page.locator('#mode-scan').click();
+    await page.getByRole('tab', { name: 'Upload image' }).click();
+    await page.locator('input[type=file]').setInputFiles({ name: 'safe.png', mimeType: 'image/png', buffer: await QRCode.toBuffer('https://example.com/', { margin: 4, width: 320 }) });
+    await expect(page.locator('.scanner-result-value')).toHaveText('https://example.com/', { timeout: 15_000 });
+    const rel = await page.getByRole('link', { name: 'Open link' }).getAttribute('rel');
+    expect(rel?.split(/\s+/).sort()).toEqual(['noopener', 'noreferrer']);
+    await expect.poll(() => page.evaluate(() => (window as unknown as { scannerAcknowledgments: number }).scannerAcknowledgments)).toBe(1);
+    const before = await page.locator('.scanner-result-panel').evaluate(e => e.getBoundingClientRect().height);
+    await page.locator('.scanner-actions button').first().click();
+    await expect(page.locator('.scanner-copy-notice')).toContainText(rejected ? /clipboard|blocked/i : /copied/i);
+    expect(await page.locator('.scanner-result-panel').evaluate(e => e.getBoundingClientRect().height)).toBe(before);
+    expect(await page.evaluate(() => (window as unknown as { scannerAcknowledgments: number }).scannerAcknowledgments)).toBe(1);
+  });
 }
 
 test('PNG export round-trips through the real local image decoder and SVG downloads', async ({ page }) => {
@@ -99,8 +126,10 @@ test('duplicate camera detections and theme/language changes do not replay ackno
   }, image);
   await page.goto('/');
   await page.locator('#mode-scan').click();
+  const cameraHeight = (await page.locator('.camera-frame').boundingBox())!.height;
   await page.getByRole('button', { name: 'Start camera' }).click();
   await expect(page.locator('.scanner-result-value')).toHaveText('https://example.com/camera');
+  expect((await page.locator('.camera-frame').boundingBox())!.height).toBeCloseTo(cameraHeight, 0);
   await expect.poll(() => page.evaluate(() => (window as unknown as { scanFeedbackTest: { acknowledgments: number } }).scanFeedbackTest.acknowledgments)).toBe(1);
   await page.getByRole('button', { name: /Switch to dark mode/ }).click();
   await page.getByRole('button', { name: 'Switch to Thai' }).click();

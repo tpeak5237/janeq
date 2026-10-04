@@ -27,7 +27,7 @@ Date: 2026-08-03
 
 ## Review
 
-- [ ] **Design review**: Capture desktop/mobile artifacts and review the build against the current utility brief. _Produces Playwright artifacts without replacing historical docs screenshots._
+- [x] **Design review**: Capture desktop/mobile artifacts and review the build against the current utility brief. _Produces Playwright artifacts without replacing historical docs screenshots._
 
 ## Utility motion follow-up (2026-10-04)
 
@@ -35,4 +35,4 @@ Date: 2026-08-03
 - [x] Replace full scanner-panel entrance with a small indicator; reserve result/notice space.
 - [x] Disable all motion under reduced motion without delaying actions.
 - [x] Reconcile utility-first layout and current-artifact behavior in design documents.
-- [ ] Motion, accessibility and visual verification: see docs/ui/MOTION_QA.md for actual results.
+- [x] Motion, accessibility and visual verification: see docs/ui/MOTION_QA.md for actual results.

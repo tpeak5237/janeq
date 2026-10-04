@@ -22,7 +22,7 @@ Production changes are limited to CSS and two feedback-markup adjustments. Gener
 | Aggregate production asset bytes | Main raw | After raw | Raw delta | Main gzip | After gzip | Gzip delta |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | JS (16 files) | 810824 | 810964 | +140 | 249428 | 249468 | +40 |
-| CSS (1 file) | 37440 | 38882 | +1442 | 8030 | 8245 | +215 |
+| CSS (1 file) | 37440 | 38867 | +1427 | 8030 | 8242 | +212 |
 
 Same Node 24.18.0/macOS build environment and `scripts/ui-bundle.mjs` gzip settings. Totals aggregate exported static chunks; not route-transfer or runtime-memory claims. Harness fill→preview wall times: baseline median44ms (35–89), after53.5ms (50–105). Browser load was not controlled enough for performance conclusions; timings include Playwright overhead. No latency improvement, field INP or physical-device success is claimed.
 
