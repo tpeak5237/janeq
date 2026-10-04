@@ -761,7 +761,7 @@ summary:focus-visible {
 
 .switch-input,
 .check-input {
-  accent-color: rgb(var(--color-coral-text));
+  accent-color: rgb(var(--color-coral));
   flex: 0 0 auto;
   height: 17px;
   width: 17px;
@@ -773,7 +773,7 @@ summary:focus-visible {
 }
 
 input[type="range"] {
-  accent-color: rgb(var(--color-coral-text));
+  accent-color: rgb(var(--color-coral));
   width: 100%;
 }
 
@@ -1262,7 +1262,7 @@ input[type="range"] {
 }
 
 .privacy-grid .privacy-open-source {
-  border-top-color: rgb(var(--color-coral-text));
+  border-top-color: rgb(var(--color-coral));
 }
 
 .privacy-open-source a {
