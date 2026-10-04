@@ -10,7 +10,7 @@ JaneQ /
 │   ├── theerapat.org external link
 │   ├── GitHub external link
 │   └── Theme toggle
-├── Hero
+├── Utility toolbar (Create/Scan)
 │   ├── Product promise
 │   ├── Trust indicators
 │   └── Create a QR code anchor
@@ -47,7 +47,7 @@ JaneQ /
 ### Create a direct URL QR code
 
 ```text
-Hero CTA → Generator → Choose Website → Enter URL →
+Create mode → Generator → Choose Website → Enter URL →
 Review normalized direct payload → Check preview/status → Download PNG/SVG
 ```
 
@@ -79,7 +79,7 @@ Adjust color/margin/size/logo → Status returns to reliable or acceptable
 - Empty preview: no valid payload yet; explains where to start.
 - Valid payload: live preview and direct payload summary.
 - Invalid payload: inline error plus no downloadable artifact.
-- Generating: preview keeps its last stable state while the new matrix is computed.
+- Generating: only the artifact matching the current generation key is shown; the preview displays its updating state until that artifact is ready.
 - Export unsupported: copy-image control is disabled with an explanatory tooltip/label.
 - Reliability warning: export remains available, but the warning is visible and actionable.
 - Dark mode: manual toggle persists locally; system preference is used before a preference exists.

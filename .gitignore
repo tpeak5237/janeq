@@ -8,3 +8,9 @@ test-results/
 .DS_Store
 *.local
 *.log
+
+# Agent-only design tooling and caches
+.agents/
+.impeccable/
+
+.ui-evidence/

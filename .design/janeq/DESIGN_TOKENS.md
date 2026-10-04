@@ -27,6 +27,15 @@ The source of truth is [`app/globals.css`](../../app/globals.css). Tailwind maps
 
 ## Motion
 
-- Fast: 140ms; normal: 240ms; slow: 420ms.
-- Default easing: `cubic-bezier(0.22, 1, 0.36, 1)`.
-- Only three motion moments: hero signal draw, mark settling, and preview refresh. All are removed under `prefers-reduced-motion`.
+Executable source of truth: `:root` in `app/globals.css`; recipes and exceptions live in [`MOTION_SYSTEM.md`](../../docs/ui/MOTION_SYSTEM.md).
+
+- `--motion-fast`: 140ms; `--motion-normal`: 240ms; `--motion-slow`: 420ms.
+- `--ease-standard`: `cubic-bezier(0.22, 1, 0.36, 1)`.
+- Fast applies to hover/release, disclosure chevrons, theme colors and small success indicators. Normal/slow are reserved, not used for routine operations.
+- Press displacement is 1px with instant execution; selection/focus/validation are immediate. QR pixels and scanner payload/warnings/actions are never animated.
+- Reduced motion disables transitions, keyframes, tactile displacement and smooth scrolling while preserving text feedback.
+- Generator/scanner feedback notices reserve two lines. Mobile scanner empty/results share a 28rem minimum; payload viewport is 6lh, warning slot 3lh. Text can expand at zoom/long content.
+
+## Accessible signal text
+
+The coral fill remains `#e9674f` / `#ff8f73`. Small coral text uses `--color-coral-text` (`#b43f2c` light / `#ff8f73` dark); coral buttons use `--color-action-ink` (`#101922`) in both themes. These narrow contrast repairs follow axe evidence, without changing layout or the signal color.

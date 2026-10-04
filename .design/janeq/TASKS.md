@@ -10,14 +10,14 @@ Date: 2026-08-03
 
 ## Core UI
 
-- [x] **Hero and trust narrative**: Build the edge-to-edge hero, direct-code visual, CTA, and short trust indicators. _Creates `app/page.tsx` and shared icon primitives._
+- [x] **Utility toolbar**: Preserve the compact Create/Scan toolbar and direct utility workflow. _Creates `app/page.tsx` and shared icon primitives._
 - [x] **Direct payload engine**: Add reusable QR types, validation, URL normalization, Wi-Fi escaping, QR matrix rendering, SVG/PNG generation, and local logo processing. _Creates `lib/qr.ts`._
 - [x] **Generator workspace**: Build type selection, fields, customization controls, live preview, validation status, and export actions. _Creates `components/qr-studio.tsx`; depends on Direct payload engine._
 
 ## Interactions and states
 
 - [x] **Trust and failure states**: Add empty, invalid, generating, reliability warning, copied, unsupported clipboard, and print states with screen-reader announcements. _Modifies the generator workspace._
-- [x] **Education sections**: Add the “why JaneQ,” privacy/ownership, acceptable-use, and static-code limitation content. _Modifies `app/page.tsx`._
+- [x] **Utility guidance**: Keep privacy/ownership and static-code limitation guidance within the working utility. _Modifies `app/page.tsx`._
 
 ## Responsive and polish
 
@@ -27,4 +27,12 @@ Date: 2026-08-03
 
 ## Review
 
-- [ ] **Design review**: Capture desktop/mobile screenshots and review the build against the brief. _Produces `.design/janeq/screenshots/` and any follow-up polish._
+- [ ] **Design review**: Capture desktop/mobile artifacts and review the build against the current utility brief. _Produces Playwright artifacts without replacing historical docs screenshots._
+
+## Utility motion follow-up (2026-10-04)
+
+- [x] Centralize 140/240/420ms durations and shared easing in executable CSS.
+- [x] Replace full scanner-panel entrance with a small indicator; reserve result/notice space.
+- [x] Disable all motion under reduced motion without delaying actions.
+- [x] Reconcile utility-first layout and current-artifact behavior in design documents.
+- [ ] Motion, accessibility and visual verification: see docs/ui/MOTION_QA.md for actual results.
