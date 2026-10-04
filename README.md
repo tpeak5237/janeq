@@ -94,6 +94,7 @@ The initial version intentionally does not include Firebase, Supabase, authentic
 - [Accessibility checklist](ACCESSIBILITY.md)
 - [Security review notes](SECURITY.md)
 - [Future roadmap](ROADMAP.md)
+- [Shared scan observation contract](docs/scan-observation-contract.md)
 
 ## Example screenshots
 
