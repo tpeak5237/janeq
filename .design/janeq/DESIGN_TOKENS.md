@@ -8,10 +8,10 @@ The source of truth is [`app/globals.css`](../../app/globals.css). Tailwind maps
 
 | Role | Light | Dark | Use |
 | --- | --- | --- | --- |
-| Paper | `#fbfcfa` | `#111920` | page and primary surfaces |
-| Fog | `#eef2f3` | `#18232b` | secondary surfaces and inputs |
+| Paper | `#fbfcfa` | `#11181e` | page and primary surfaces |
+| Fog | `#f0f3f2` | `#192127` | secondary surfaces and inputs |
 | Ink | `#101922` | `#f3f5f1` | primary text and controls |
-| Muted | `#64727b` | `#aeb9bc` | supporting text |
+| Muted | `#606d74` | `#acb7ba` | supporting text |
 | Coral | `#e9674f` | `#ff8f73` | primary action and signal |
 | Lime | `#d7ee73` | `#d7ee73` | trust indicators and focus support |
 | Success | `#2c8059` | `#7ddaa6` | reliable state |
@@ -20,13 +20,22 @@ The source of truth is [`app/globals.css`](../../app/globals.css). Tailwind maps
 ## Rhythm and type
 
 - Base spacing: 4px, expanding through 8/12/16/24/32/48/64/96/128.
-- Display: condensed system sans, bold and tight for the wordmark and hero; Thai mode uses bundled Noto Sans Thai with normal tracking and no faux italic.
-- Body: system sans in English; Noto Sans Thai for Thai and mixed Thai/Latin UI, 16px default with 1.6–1.7 line height.
+- Display: condensed system sans, bold and tight for the wordmark and utility headings; Thai mode uses bundled Noto Sans Thai with normal tracking and no faux italic.
+- Body: system sans in English; Noto Sans Thai for Thai and mixed Thai/Latin UI, 16px browser/Tailwind default; Thai body line height 1.65, utility controls and metadata use their scoped CSS sizes.
 - Technical: system monospace for payloads, filenames, and state labels.
-- Corner language: 10px for fields, 18px for the workspace shell, full pills only for status.
+- Corner language: radius tokens 8/12/16px; components consume their scoped radius, with full pills for status.
 
 ## Motion
 
-- Fast: 140ms; normal: 240ms; slow: 420ms.
-- Default easing: `cubic-bezier(0.22, 1, 0.36, 1)`.
-- Only three motion moments: hero signal draw, mark settling, and preview refresh. All are removed under `prefers-reduced-motion`.
+Executable source of truth: `:root` in `app/globals.css`; recipes and exceptions live in [`MOTION_SYSTEM.md`](../../docs/ui/MOTION_SYSTEM.md).
+
+- `--motion-fast`: 140ms; `--motion-normal`: 240ms; `--motion-slow`: 420ms.
+- `--ease-standard`: `cubic-bezier(0.22, 1, 0.36, 1)`.
+- Fast applies to hover/release, disclosure chevrons, theme colors and small success indicators. Normal/slow are reserved, not used for routine operations.
+- Press displacement is 1px with instant execution; selection/focus/validation are immediate. QR pixels and scanner payload/warnings/actions are never animated.
+- Reduced motion disables transitions, keyframes, tactile displacement and smooth scrolling while preserving text feedback.
+- Generator/scanner feedback notices reserve two lines. Mobile scanner empty/results share a 28rem minimum; payload viewport is 6lh, warning slot 3lh. Text can expand at zoom/long content.
+
+## Accessible signal text
+
+The coral fill remains `#e9674f` / `#ff8f73`. Small coral text uses `--color-coral-text` (`#b43f2c` light / `#ff8f73` dark); coral buttons use `--color-action-ink` (`#101922`) in both themes. These narrow contrast repairs follow axe evidence, without changing layout or the signal color.

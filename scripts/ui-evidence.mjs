@@ -1,0 +1,34 @@
+import { chromium } from '@playwright/test';
+import QRCode from 'qrcode';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+const phase = process.argv[2] ?? 'after';
+const root = join('.ui-evidence', phase);
+await mkdir(root, { recursive: true });
+const browser = await chromium.launch();
+const results = [];
+for (const mobile of [false, true]) for (const locale of ['en', 'th']) for (const dark of [false, true]) for (const reduce of [false, true]) {
+  const name = `${mobile ? 'mobile' : 'desktop'}-${locale}-${dark ? 'dark' : 'light'}-${reduce ? 'reduce' : 'normal'}`;
+  const context = await browser.newContext({ viewport: mobile ? { width: 375, height: 812 } : { width: 1280, height: 900 }, isMobile: mobile, hasTouch: mobile, colorScheme: dark ? 'dark' : 'light', reducedMotion: reduce ? 'reduce' : 'no-preference' });
+  await context.tracing.start({ screenshots: true, snapshots: true });
+  await context.addInitScript(l => localStorage.setItem('janeq-locale', l), locale);
+  const page = await context.newPage();
+  await page.goto('http://127.0.0.1:3000/');
+  await page.evaluate(() => document.fonts.ready);
+  const started = performance.now();
+  await page.getByLabel(locale === 'en' ? 'Website address' : 'ลิงก์เว็บไซต์').fill('https://theerapat.org/janeq');
+  await page.getByTestId('qr-preview').locator('img').waitFor();
+  results.push({ name, fillToPreviewMs: Math.round(performance.now() - started) });
+  await page.screenshot({ path: join(root, `${name}-create.png`), fullPage: true, animations: 'disabled' });
+  await page.locator('#mode-scan').click();
+  await page.screenshot({ path: join(root, `${name}-scanner-empty.png`), fullPage: true, animations: 'disabled' });
+  await page.getByRole('tab', { name: locale === 'en' ? 'Upload image' : 'เลือกรูป' }).click();
+  await page.locator('input[type=file]').setInputFiles({ name: 'unsafe.png', mimeType: 'image/png', buffer: await QRCode.toBuffer('javascript:alert(1)', { margin: 4, width: 320 }) });
+  await page.locator('.scanner-result-value').waitFor();
+  await page.screenshot({ path: join(root, `${name}-scanner-unsafe.png`), fullPage: true, animations: 'disabled' });
+  await context.tracing.stop({ path: join(root, `${name}.zip`) });
+  await context.close();
+}
+await browser.close();
+await writeFile(join(root, 'timings.json'), JSON.stringify(results, null, 2));
+console.log(`Captured ${results.length} combinations (48 screenshots and 16 traces) in ${root}`);

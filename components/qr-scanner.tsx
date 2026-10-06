@@ -395,18 +395,20 @@ export function QrScanner() {
         >
           {result ? (
             <>
-              <span className="workspace-kicker">{t("qrDetected")}</span>
+              <span className="workspace-kicker scanner-result-indicator">{t("qrDetected")}</span>
               {safeUrl ? (
                 <p className="scanner-hostname">{safeUrl.hostname}</p>
               ) : (
                 <p className="scanner-kind">{t(SCAN_KIND_KEYS[result.kind])}</p>
               )}
               <code className="scanner-result-value">{result.label}</code>
-              {isUnsafeScanPayload(result.label) ? (
-                <p className="scanner-unsafe" role="status">
-                  {t("scannerUnsafeScheme")}
-                </p>
-              ) : null}
+              <div className="scanner-warning-slot">
+                {isUnsafeScanPayload(result.label) ? (
+                  <p className="scanner-unsafe" role="status">
+                    {t("scannerUnsafeScheme")}
+                  </p>
+                ) : null}
+              </div>
               <div className="scanner-actions">
                 <button className="action-button" onClick={() => void copyResult()} type="button">
                   {t("copyResult")}
@@ -425,7 +427,7 @@ export function QrScanner() {
                   {t("scanAnother")}
                 </button>
               </div>
-              {copyNotice ? <p className="scanner-copy-notice">{copyNotice}</p> : null}
+              <p className="scanner-copy-notice">{copyNotice}</p>
             </>
           ) : (
             <div className="scanner-empty-state">

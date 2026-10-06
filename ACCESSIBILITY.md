@@ -10,7 +10,7 @@ The initial JaneQ pass is designed against WCAG 2.2 AA fundamentals.
 - [x] Inline validation is text-based, announced with `aria-live`, and never relies on color alone.
 - [x] Preview image has meaningful alternative text describing the encoded target category.
 - [x] Decorative QR art and icons are hidden from assistive technology.
-- [x] Reduced-motion media query removes decorative transitions and smooth scrolling.
+- [x] Reduced-motion media query disables transitions, keyframes, tactile movement and smooth scrolling; text feedback remains.
 - [x] Dark mode preserves semantic contrast and can be toggled without changing content.
 - [x] Touch targets are at least roughly 38–46 px for primary controls.
 - [x] Create/Scan and Camera/Upload controls use keyboard-operable tab semantics with visible selected states.
@@ -29,3 +29,7 @@ The initial JaneQ pass is designed against WCAG 2.2 AA fundamentals.
 5. Upload a QR image, copy the result, and verify unsafe URL schemes have no Open link action.
 6. Turn on reduced motion and confirm the page remains fully understandable.
 7. Test at 375 px and 1280 px widths with browser zoom at 200%.
+
+## Motion QA
+
+Read `docs/ui/MOTION_QA.md` for automated coverage and evidence boundaries. Browser axe coverage checks WCAG A/AA tags on EN/TH light/dark generation and unsafe scanner results; it does not replace screen-reader or physical-device testing. Existing tablists are operable by Tab/Enter/Space but conventional arrow-key/roving-tabindex navigation remains a separate follow-up.

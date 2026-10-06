@@ -976,7 +976,11 @@ export function QrStudio() {
             <span
               className={`status-pill ${isValid ? "status-pill-valid" : localizedPayload.error ? "status-pill-error" : "status-pill-neutral"}`}
             >
-              <span aria-hidden="true">
+              <span
+                aria-hidden="true"
+                key={currentArtifact?.key ?? "waiting"}
+                className={isValid ? "preview-feedback-indicator" : undefined}
+              >
                 {isValid ? "●" : localizedPayload.error ? "!" : "○"}
               </span>
               {isValid
@@ -986,7 +990,7 @@ export function QrStudio() {
                   : t("waitingInput")}
             </span>
           </div>
-          {notice ? <p className="status-message">{notice}</p> : null}
+          <p className="status-message">{notice}</p>
           {localizedReliabilityMessages.some(
             (message) => message.severity === "warning",
           ) ? (

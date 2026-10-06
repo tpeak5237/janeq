@@ -106,3 +106,7 @@ The repository also includes a dark-mode capture at [`docs/screenshots/janeq-dar
 ## License
 
 MIT. See [LICENSE](LICENSE) when the project is published.
+
+## UI motion verification
+
+Read [motion contracts](docs/ui/MOTION_SYSTEM.md) before UI edits. [Audit](docs/ui/UI_MOTION_AUDIT.md), [QA coverage](docs/ui/MOTION_QA.md) and [agent toolchain](docs/ui/UI_TOOLCHAIN.md) separate implementation, local checks, CI and device evidence. Run `npm run build` before `npm run test:e2e`; browser checks serve the production static export.

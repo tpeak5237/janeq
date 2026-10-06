@@ -31,7 +31,7 @@ JaneQ makes the directness visible: the destination is encoded in the image in t
 
 ### In scope
 
-- A single responsive Next.js App Router page.
+- A single responsive Next.js App Router utility page with Create/Scan modes.
 - Local QR matrix generation and rendering.
 - Direct payload builders for eight common QR types.
 - Custom colors, transparent backgrounds, correction level, quiet zone, output size, module shape, and local logo handling.
@@ -48,9 +48,9 @@ JaneQ makes the directness visible: the destination is encoded in the image in t
 
 - **Palette:** cool fog `#eef2f3`, clean paper `#fbfcfa`, ink navy `#101922`, signal coral `#e9674f`, indicator lime `#d7ee73`.
 - **Type:** condensed sans display for a compact, poster-like voice; Noto Sans Thai for Thai headings and mixed Thai/Latin UI; system sans for English body copy; mono for payloads and technical state.
-- **Layout:** edge-to-edge hero, then a quiet two-column utility workspace with the preview treated as the primary instrument.
-- **Signature:** the JaneQ mark is a Q-shaped loop with a missing QR module and a direct arrow. It appears in the logo, hero graphic, and empty preview state.
-- **Motion:** the missing module settles into place on entry; a single coral signal line draws toward the hero CTA; preview state transitions use short fades and respect reduced motion.
+- **Layout:** compact utility toolbar and Create/Scan switcher; two-column generator on desktop, stacked controls/preview on mobile. Scanner result space stays reserved.
+- **Signature:** the JaneQ mark is a Q-shaped loop with a missing QR module and a direct arrow. It appears in the logo and empty preview state.
+- **Motion:** immediate controls with 1px tactile press/release, short chevron transitions and small status acknowledgments. QR pixels, warnings and operational content remain static; see `docs/ui/MOTION_SYSTEM.md`.
 
 ## Content principles
 
