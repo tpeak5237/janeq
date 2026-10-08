@@ -9,7 +9,13 @@
   },
   "overrides": {
     "next": {
-      "sharp": "0.35.4"
+      "sharp": "0.35.5"
+    },
+    "serve": {
+      "compression": "1.8.2"
+    },
+    "@next/eslint-plugin-next": {
+      "fast-glob": "npm:tinyglobby@0.2.17"
     }
   },
   "scripts": {
@@ -24,7 +30,7 @@
     "validate": "npm run typecheck && npm run lint && npm test && npm run build"
   },
   "dependencies": {
-    "next": "16.3.5",
+    "next": "16.3.8",
     "promptpay-qr": "^0.5.0",
     "qr-scanner": "^1.4.2",
     "qrcode": "1.5.4",
@@ -34,17 +40,19 @@
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.62.1",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "22.20.4",
     "@types/qrcode": "1.5.5",
     "@types/react": "18.3.18",
     "@types/react-dom": "18.3.5",
     "autoprefixer": "10.4.20",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.3.5",
+    "eslint-config-next": "16.3.8",
     "postcss": "8.5.25",
     "serve": "14.2.6",
-    "tailwindcss": "3.4.17",
+    "tailwindcss": "4.3.3",
     "typescript": "5.7.2",
-    "vitest": "5.0.1"
+    "vitest": "5.0.3",
+    "playwright-core": "1.62.1"
   }
 }
