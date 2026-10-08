@@ -1,6 +1,7 @@
 # Security review notes
 
-Last reviewed: 2026-09-21
+Boundary notes last reviewed: 2026-09-21
+Dependency review refreshed: 2026-10-08
 
 ## Boundary
 
@@ -32,7 +33,7 @@ JaneQ does not validate or guarantee the safety of encoded destinations. Users s
 - Run `npm audit` during release review and update dependencies when advisories affect the runtime or build chain.
 - The app should be served over HTTPS in production so browser clipboard and file APIs receive their secure-context permissions.
 
-The dependency baseline updated on 2026-09-22 uses Next.js 16.3.5 and pins Sharp 0.35.4. A clean `npm ci` followed by `npm audit` reported zero findings. Re-run the audit during release review; this dated local result does not replace CI, deployment, or live verification.
+The dependency baseline updated on 2026-09-22 uses Next.js 16.3.5 and pins Sharp 0.35.4. A clean `npm ci` followed by `npm audit` reported zero findings. That historical result is no longer the current dependency posture. The October 8, 2026 maintenance review updates Next.js to 16.3.8 and Sharp to 0.35.5: the runtime and full audits report zero vulnerabilities after the reviewed Tailwind 4 migration and narrowly scoped Next lint glob alias. See [the current dependency review](docs/DEPENDENCY_REVIEW.md) for affected chains and CI policy. Re-run both audits during release review; a dated local result does not replace CI, deployment, or live verification.
 
 ## Not implemented by design
 

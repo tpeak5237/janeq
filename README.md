@@ -94,6 +94,11 @@ The initial version intentionally does not include Firebase, Supabase, authentic
 - [Accessibility checklist](ACCESSIBILITY.md)
 - [Security review notes](SECURITY.md)
 - [Future roadmap](ROADMAP.md)
+- [Contributing](CONTRIBUTING.md)
+- [Architecture boundaries](docs/ARCHITECTURE.md)
+- [Maintenance decisions](docs/DECISIONS.md)
+- [Current dependency review](docs/DEPENDENCY_REVIEW.md)
+- [Dated maintenance verification](docs/MAINTENANCE_VERIFICATION.md)
 
 ## Example screenshots
 
@@ -105,7 +110,7 @@ The repository also includes a dark-mode capture at [`docs/screenshots/janeq-dar
 
 ## License
 
-MIT. See [LICENSE](LICENSE) when the project is published.
+MIT. See [LICENSE](LICENSE).
 
 ## UI motion verification
 
